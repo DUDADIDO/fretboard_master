@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>기타 트레이너 Mobile Pro</title>
+<style>
+:root{ --primary:#4a90e2; --wood:#2c1e14; --board-height: 250px; }
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html{ height:100%; overflow:hidden; }
+body{ margin:0; font-family:sans-serif; background:#000; color:#fff; overflow:hidden; height:100dvh; display:flex; flex-direction:column; }
+
+.header{ flex-shrink:0; background:#222; padding:max(env(safe-area-inset-top),8px) 10px 8px; display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:center; gap:8px; min-height:58px; } .header #status{justify-self:start;} .header .acc-group{justify-self:end;}
+.target-note{ font-size:clamp(2rem,7vw,3.5rem); font-weight:900; color:var(--primary); line-height:1; min-height:1.15em; height:1.15em; display:flex; align-items:center; justify-content:center; white-space:nowrap; overflow:hidden; font-variant-numeric:tabular-nums; }
+#status{ font-size:0.95rem; font-weight:bold; }
+
+.fretboard-area{ flex:1; min-height:0; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#1a1a1a; padding:4px 0; }
+.fretboard{ position:relative; display:flex; width:100vw; max-width:1400px; height:var(--board-height); background:var(--wood); border-top:4px solid #444; border-bottom:4px solid #444; flex-shrink:0; transition:height .2s ease; overflow:visible; }
+
+/* 줄 레이어 z-index 1 */
+.string-layer{ position:absolute; inset:0; pointer-events:none; z-index:1; }
+.string{ position:absolute; left:0; width:100%; background: linear-gradient(to bottom, #f5f5f5, #8f8f8f); box-shadow: 0 1px 3px rgba(0,0,0,0.9); border-radius:999px; transition:opacity .2s; }
+.s1{ top:8%;  height:1.5px; }
+.s2{ top:25%; height:2.2px; }
+.s3{ top:42%; height:3.2px; }
+.s4{ top:58%; height:4.5px; }
+.s5{ top:75%; height:6px;   }
+.s6{ top:91%; height:8px;   }
+.string.dimmed{ opacity:0.12; }
+
+/* fret은 z-index 없앰 */
+.fret{ flex:1; border-right:2px solid #c5a059; position:relative; min-width:0; }
+.fret:first-child{ flex:0.7; border-right:10px solid #ddd; }
+.inlay{ position:absolute; top:50%; left:50%; transform: translate(-50%,-50%); width:10px; height:10px; border-radius:50%; background:#fff; opacity:0.6; }
+.inlay-12-top{ top:20%; }
+.inlay-12-bottom{ top:80%; }
+
+/* 노드 z-index 10으로 오버레이 완벽 보장 */
+.node{ position:absolute; width:clamp(18px, 2.8vw, 40px); height:clamp(18px, 2.8vw, 40px); border-radius:50%; transform:translate(-50%,-50%); display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:clamp(0.45rem, 1vw, 1rem); color:transparent; z-index:10; user-select:none; transition: opacity .2s; }
+.node.correct{ background:#27ae60 !important; color:#fff !important; animation:none; }
+.node.wrong{ background:#e74c3c !important; color:#fff !important; animation:shakeWrong .25s ease; }
+@keyframes popCorrect{ 0%{ transform:translate(-50%,-50%) scale(.82); } 70%{ transform:translate(-50%,-50%) scale(1.18); } 100%{ transform:translate(-50%,-50%) scale(1); } }
+@keyframes shakeWrong{ 0%,100%{ transform:translate(-50%,-50%); } 25%{ transform:translate(calc(-50% - 4px),-50%); } 75%{ transform:translate(calc(-50% + 4px),-50%); } }
+.node.dimmed{ opacity:0.08; }
+.node.root-found{ background:#4a90e2 !important; color:#fff !important; box-shadow:0 0 0 3px rgba(74,144,226,.22); }
+.node.third-found{ background:#f39c12 !important; color:#fff !important; box-shadow:0 0 0 3px rgba(243,156,18,.22); }
+.node.penta-found{background:#8e44ad !important;color:#fff !important;}.node.penta-root{background:#2980b9 !important;color:#fff !important;box-shadow:0 0 0 3px rgba(41,128,185,.25);}.node.penta-preview-note{background:rgba(142,68,173,.8) !important;color:#fff !important;}.node.penta-preview-note.penta-root{background:#2980b9 !important;}.node.penta-clickable{box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);}.node.penta-clickable:active{transform:translate(-50%,-50%) scale(.86);}.string.current-string{opacity:1 !important;box-shadow:0 0 6px rgba(74,144,226,.95),0 1px 3px rgba(0,0,0,.9);}.penta-controls{width:100%;display:none;gap:5px;flex-direction:column;margin-top:6px;border-top:1px solid #444;padding-top:6px;}.penta-row{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}.penta-select{min-height:32px;border:1px solid #666;border-radius:7px;background:#333;color:#fff;padding:5px 8px;font-weight:bold;max-width:190px;}.penta-position-label{min-width:45px;text-align:center;font-size:.78rem;font-weight:900;}.penta-help-mobile{font-size:.68rem;line-height:1.35;color:#d5d5d5;background:#2b2b2b;border-radius:7px;padding:6px 8px;}.penta-preview.active{background:#8e44ad;}.penta-keep.active{background:#16a085;}.penta-hint-btn.active{background:#f39c12;}.penta-hint-box-mobile{display:none;font-size:.67rem;line-height:1.35;color:#ffe7a8;background:#4b3b17;border:1px solid #806929;border-radius:7px;padding:6px 8px;}.penta-hint-box-mobile.show{display:block;}.node.penta-hint-note{color:#fff !important;box-shadow:0 0 0 3px #f1c40f,0 0 12px rgba(241,196,15,.9)!important;animation:pentaHintPulse .9s ease-in-out infinite alternate;}@keyframes pentaHintPulse{from{transform:translate(-50%,-50%) scale(.94)}to{transform:translate(-50%,-50%) scale(1.12)}}.penta-progress-mobile{display:flex;gap:4px;flex-wrap:wrap;min-height:22px;}.penta-step-mobile{padding:3px 7px;border-radius:999px;background:#3b3b3b;color:#999;font-size:.64rem;font-weight:900;}.penta-step-mobile.current{background:#4a90e2;color:#fff;}.penta-step-mobile.done{background:#155f50;color:#d9fff7;}.penta-feedback-mobile{min-height:18px;font-size:.68rem;font-weight:900;color:#bbb;}.penta-feedback-mobile.correct{color:#59d5ad;}.penta-feedback-mobile.wrong{color:#ff8c80;}.third-controls{ width:100%; display:none; gap:6px; flex-direction:column; margin-top:6px; border-top:1px solid #444; padding-top:6px; }
+.third-primary{ display:flex; gap:5px; align-items:center; flex-wrap:wrap; }
+.third-controls .label{ font-size:.72rem; opacity:.72; display:flex; align-items:center; padding:0 3px; }
+.third-controls .btn{ padding:7px 8px; min-height:32px; font-size:.75rem; }
+.third-note{ min-width:42px; }
+.third-more{ width:100%; border:1px solid #444; border-radius:8px; overflow:hidden; }
+.third-more summary{ list-style:none; cursor:pointer; padding:8px 10px; font-size:.76rem; font-weight:bold; background:#2b2b2b; display:flex; justify-content:space-between; }
+.third-more summary::-webkit-details-marker{ display:none; }
+.third-more summary::after{ content:'열기 ▾'; opacity:.65; }
+.third-more[open] summary::after{ content:'닫기 ▴'; }
+.third-more-body{ display:flex; gap:6px; flex-direction:column; padding:7px; }
+.third-setting-row{ display:flex; gap:5px; flex-wrap:wrap; align-items:center; }
+.fret-num{ position:absolute; top:4px; left:0; width:100%; text-align:center; color:#aaa; font-weight:bold; font-size:clamp(.52rem, 1.25vw, .78rem); z-index:12; pointer-events:none; transition:opacity .18s ease, transform .18s ease; }
+.fretboard.hide-fret-nums .fret-num{ opacity:0; transform:translateY(-4px); }
+
+.footer{ flex-shrink:0; background:#222; display:flex; gap:5px; flex-wrap:wrap; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)) 8px; }
+.btn{ background:#444; color:#fff; border:none; padding:10px 12px; border-radius:6px; font-weight:bold; font-size:0.95rem; min-height:42px; }
+.btn.active{ background:var(--primary); }
+.acc-group{ display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end; align-items:center; }
+.acc-group .btn{ padding:8px 9px; min-height:36px; font-size:0.82rem; }
+#string-controls{ width:100%; display:none; gap:6px; flex-wrap:wrap; margin-top:6px; }
+
+.warning{ display:none; }
+@media screen and (orientation:portrait){ .warning{ display:flex; position:fixed; inset:0; background:#111; z-index:9999; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:20px; } }
+@media (max-width:700px){ .btn{ min-height:38px; padding:8px 10px; font-size:0.82rem; } #status{ font-size:0.8rem; } }
+
+
+.chord-controls{width:100%;display:none;gap:5px;flex-direction:column;margin-top:6px;border-top:1px solid #444;padding-top:6px}.chord-row{display:flex;gap:5px;flex-wrap:wrap;align-items:center}.chord-help-mobile{font-size:.67rem;line-height:1.35;color:#d5d5d5;background:#2b2b2b;border-radius:7px;padding:6px 8px}.node.chord-root{background:#2980b9!important;color:#fff!important}.node.chord-tone{background:#16a085!important;color:#fff!important}
+</style>
+<script type="text/javascript" nonce="f61e57b7cd354aa19f25128ae02" src="//local.adguard.org?ts=1786978268033&amp;type=content-script&amp;dmn=chatgpt.com&amp;url=https%3A%2F%2Fchatgpt.com%2Fbackend-api%2Festuary%2Fcontent%3Fid%3Dfile_00000000f16882118d86e12d6128b6cb%26fn%3Dmobile_codetone%25282%2529.html%26cd%3Dattachment%26ts%3D496383%26p%3Dfs%26cid%3D1%26sig%3D883f5aa5d626d7614bde59675d9c2f17a09f12233bc7c1f5ee6be8630318c45e%26v%3D0&amp;app=chrome.exe&amp;css=2&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1&amp;stealth=1&amp;st-dnt"></script><script type="text/javascript" nonce="f61e57b7cd354aa19f25128ae02" src="//local.adguard.org?ts=1786978268033&amp;name=AdGuard%20Extra%20%28Beta%29&amp;name=AdGuard%20Popup%20Blocker%20%28Beta%29&amp;type=user-script"></script><script type="text/javascript" nonce="dacacaf0cccb4d7d99a53122c98" src="//local.adguard.org?ts=1785066142011&amp;type=content-script&amp;dmn=chatgpt.com&amp;url=https%3A%2F%2Fchatgpt.com%2Fbackend-api%2Festuary%2Fcontent%3Fid%3Dfile_00000000d3e482099fa36f1a546e1c91%26fn%3Dmobile_pentatonic%25283%2529.html%26cd%3Dattachment%26ts%3D495856%26p%3Dfs%26cid%3D1%26sig%3D5107889787b7a00dc3fd15f939b3c6185195b2d6e9e7fcfa64d9e84bfbec2d2c%26v%3D0&amp;app=chrome.exe&amp;css=2&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1&amp;stealth=1&amp;st-dnt"></script><script type="text/javascript" nonce="dacacaf0cccb4d7d99a53122c98" src="//local.adguard.org?ts=1785066142011&amp;name=AdGuard%20Extra%20%28Beta%29&amp;name=AdGuard%20Popup%20Blocker%20%28Beta%29&amp;type=user-script"></script></head>
+<body>
+
+<div class="warning"><h2>🔄 화면을 가로로 돌려주세요</h2></div>
+<div class="header">
+    <div id="status">-</div>
+    <div id="target-note" class="target-note">-</div>
+    <div class="acc-group" id="acc-group">
+        <button id="acc-natural" class="btn active" onclick="toggleNoteType('natural')">기본</button>
+        <button id="acc-sharp" class="btn" onclick="toggleNoteType('sharp')">#</button>
+        <button id="acc-flat" class="btn" onclick="toggleNoteType('flat')">b</button>
+    </div>
+</div>
+
+<div class="fretboard-area">
+    <div class="fretboard" id="fretboard">
+        <div class="string-layer">
+            <div class="string s6"></div><div class="string s5"></div><div class="string s4"></div>
+            <div class="string s3"></div><div class="string s2"></div><div class="string s1"></div>
+        </div>
+    </div>
+</div>
+
+<div class="footer">
+    <button class="btn mode-btn active" id="m-ALL" onclick="setM('ALL')">전체</button>
+    <button class="btn mode-btn" id="m-ONE" onclick="setM('ONE')">1줄</button>
+    <button class="btn mode-btn" id="m-MULTI" onclick="setM('MULTI')">다중줄</button>
+    <button class="btn mode-btn" id="m-SEQ" onclick="setM('SEQ')">6→1→6</button>
+    <button class="btn mode-btn" id="m-THIRD" onclick="setM('THIRD')">3도</button>
+    <button class="btn mode-btn" id="m-PENTA" onclick="setM('PENTA')">펜타토닉</button>
+    <button class="btn mode-btn" id="m-CHORD" onclick="setM('CHORD')">코드톤</button>
+    <button class="btn active" id="fret-num-btn" onclick="toggleFretNumbers()">프렛번호</button>
+    <div id="string-controls">
+        <button class="btn bulk-btn" onclick="toggleAllStrings(true)">전체ON</button>
+        <button class="btn bulk-btn" onclick="toggleAllStrings(false)">전체OFF</button>
+        <button class="btn strsel active" data-s="1">1</button>
+        <button class="btn strsel" data-s="2">2</button>
+        <button class="btn strsel" data-s="3">3</button>
+        <button class="btn strsel" data-s="4">4</button>
+        <button class="btn strsel" data-s="5">5</button>
+        <button class="btn strsel" data-s="6">6</button>
+    </div>
+    <div id="penta-controls" class="penta-controls">
+        <div class="penta-row"><span class="label">스케일</span><select id="penta-root-select" class="penta-select" onchange="setPentaRoot(this.value)"></select><button id="pq-MAJOR" class="btn active" onclick="setPentaQuality('MAJOR')">메이저</button><button id="pq-MINOR" class="btn" onclick="setPentaQuality('MINOR')">마이너</button></div>
+        <div class="penta-row"><span class="label">출제</span><select id="penta-practice-select" class="penta-select" onchange="setPentaPractice(this.value)"><option value="GUIDED">초심자 · 6→1번 줄</option><option value="STRING">줄별 반복 · 6→1</option><option value="RANDOM_STRING">랜덤 줄</option><option value="FULL">전체 테스트</option></select><button id="penta-keep-btn" class="btn penta-keep active" onclick="togglePentaKeepPrevious()">유지 ON</button><button id="penta-hint-btn" class="btn penta-hint-btn" onclick="togglePentaHint()">힌트</button></div>
+        <div class="penta-row"><span class="label">위치</span><button class="btn" onclick="changePentaPosition(-1)">◀</button><span id="penta-position-label" class="penta-position-label">P1/5</span><button class="btn" onclick="changePentaPosition(1)">▶</button><button id="penta-preview-btn" class="btn penta-preview" onclick="togglePentaPreview()">정답 보기</button><button id="penta-restart-btn" class="btn" onclick="restartPentaQuiz()">처음</button></div>
+        <div id="penta-progress-mobile" class="penta-progress-mobile"></div>
+        <div id="penta-feedback-mobile" class="penta-feedback-mobile" aria-live="polite"></div>
+        <div id="penta-hint-box-mobile" class="penta-hint-box-mobile" aria-live="polite"></div>
+        <div id="penta-help-mobile" class="penta-help-mobile"></div>
+    </div>
+    <div id="chord-controls" class="chord-controls">
+        <div class="chord-row"><span class="label">코드</span><button id="cq-MAJ7" class="btn active" onclick="setChordQuality('MAJ7')">Maj7</button><button id="cq-MIN7" class="btn" onclick="setChordQuality('MIN7')">m7</button><button id="cq-DOM7" class="btn" onclick="setChordQuality('DOM7')">7</button></div>
+        <div class="chord-row"><span class="label">방식</span><button id="cp-DIRECT" class="btn active" onclick="setChordPractice('DIRECT')">직접</button><button id="cp-RANDOM" class="btn" onclick="setChordPractice('RANDOM')">랜덤</button><button id="cp-STRING_SEQ" class="btn" onclick="setChordPractice('STRING_SEQ')">줄순차</button><button id="cp-FULL_SEQ" class="btn" onclick="setChordPractice('FULL_SEQ')">전체순차</button></div>
+        <div class="chord-row"><span class="label">루트</span><div id="chord-note-btns" style="display:flex;gap:5px;flex-wrap:wrap"></div></div>
+        <div class="chord-row"><span class="label">줄</span><div id="chord-str-btns" style="display:flex;gap:5px;flex-wrap:wrap"></div></div>
+        <div id="chord-help-mobile" class="chord-help-mobile">한 줄에서 1→3/b3→5→7/b7. 정답은 선택한 줄에서 같은 코드톤 음이면 어느 옥타브든 인정. 3/b3·5는 양쪽 인접 줄 Root 기준, G↔B 경계는 1F 보정.</div>
+    </div>
+    <div id="third-controls" class="third-controls">
+        <div class="third-primary">
+            <span class="label">종류</span>
+            <button class="btn third-quality active" id="tq-MAJOR" onclick="setThirdQuality('MAJOR')">메이저 3도</button>
+            <button class="btn third-quality" id="tq-MINOR" onclick="setThirdQuality('MINOR')">마이너 3도</button>
+            <span class="label">방식</span>
+            <button class="btn third-mode active" id="tm-RANDOM" onclick="setThirdMode('RANDOM')">랜덤</button>
+            <button class="btn third-mode" id="tm-FIXED_NOTE" onclick="setThirdMode('FIXED_NOTE')">음</button>
+            <button class="btn third-mode" id="tm-FIXED_STRING" onclick="setThirdMode('FIXED_STRING')">줄</button>
+            <button class="btn third-mode" id="tm-FIXED_BOTH" onclick="setThirdMode('FIXED_BOTH')">음+줄</button>
+            <button class="btn third-mode" id="tm-SEQ" onclick="setThirdMode('SEQ')">순차</button>
+        </div>
+        <details id="third-more" class="third-more">
+            <summary>출제 범위 설정</summary>
+            <div class="third-more-body">
+                <div class="third-setting-row">
+                    <span class="label">루트 음</span>
+                    <div id="third-note-btns" style="display:flex;gap:5px;flex-wrap:wrap;"></div>
+                </div>
+                <div class="third-setting-row">
+                    <span class="label">출제 줄</span>
+                    <button class="btn" onclick="thirdAllStrings(true)">전체ON</button>
+                    <button class="btn" onclick="thirdAllStrings(false)">전체OFF</button>
+                    <div id="third-str-btns" style="display:flex;gap:5px;flex-wrap:wrap;"></div>
+                </div>
+            </div>
+        </details>
+    </div>
+</div>
+
+<script>
+const noteNames = ["E","F","F#","G","G#","A","A#","B","C","C#","D","D#"];
+const altNames = { "F#":"Gb", "G#":"Ab", "A#":"Bb", "C#":"Db", "D#":"Eb" };
+const naturalNames = noteNames.filter(n => !n.includes('#'));
+const sharpNames = noteNames.filter(n => n.includes('#'));
+const flatNames = Object.values(altNames);
+
+function getNotePool(){
+    let pool = [];
+    if(noteTypeEnabled.natural) pool = pool.concat(naturalNames);
+    if(noteTypeEnabled.sharp) pool = pool.concat(sharpNames);
+    if(noteTypeEnabled.flat) pool = pool.concat(flatNames);
+    return pool.length ? pool : naturalNames;
+}
+
+function updateNoteTypeButtons(){
+    document.getElementById('acc-natural').classList.toggle('active', noteTypeEnabled.natural);
+    document.getElementById('acc-sharp').classList.toggle('active', noteTypeEnabled.sharp);
+    document.getElementById('acc-flat').classList.toggle('active', noteTypeEnabled.flat);
+}
+
+function getNoteTypeLabel(){
+    const labels = [];
+    if(noteTypeEnabled.natural) labels.push('기본');
+    if(noteTypeEnabled.sharp) labels.push('#');
+    if(noteTypeEnabled.flat) labels.push('b');
+    return labels.join(' + ');
+}
+
+function toggleNoteType(type){
+    const enabledCount = Object.values(noteTypeEnabled).filter(Boolean).length;
+    if(noteTypeEnabled[type] && enabledCount === 1) return; // 최소 하나는 항상 켜두기
+    noteTypeEnabled[type] = !noteTypeEnabled[type];
+    updateNoteTypeButtons();
+    newQuiz();
+}
+
+function matchesTarget(node){
+    return node.dataset.n1 === target || node.dataset.n2 === target;
+}
+
+
+function updateFretNumberVisibility(){
+    const board = document.getElementById('fretboard');
+    const btn = document.getElementById('fret-num-btn');
+    if(board) board.classList.toggle('hide-fret-nums', !showFretNumbers);
+    if(btn){
+        btn.classList.toggle('active', showFretNumbers);
+        btn.innerText = showFretNumbers ? '프렛번호' : '번호OFF';
+    }
+}
+
+function toggleFretNumbers(){
+    showFretNumbers = !showFretNumbers;
+    updateFretNumberVisibility();
+}
+
+
+
+
+// 정확한 표준 튜닝 
+const stringRoots = [0, 7, 3, 10, 5, 0];
+const MAX_FRET = 24;
+
+let mode = 'ALL', target = "", found = 0, total = 0, targetStr = -1;
+let thirdMode = 'RANDOM';
+let thirdQuality = 'MAJOR';
+let thirdFixedNote = 'C';
+let thirdSelectedNotes = ['C'];
+let thirdActiveStrings = [true,true,true,true,true,true];
+let thirdPhase = 'ROOT';
+let thirdRootNote = 'C', thirdRootString = 6, thirdRootFret = -1, thirdTargetNote = 'E';
+let thirdTargets = [], thirdSeqQueue = [], thirdSeqIndex = 0;
+let chordQuality='MAJ7',chordPractice='DIRECT',chordRootNote='C',chordString=6,chordRootFret=-1,chordStep=0; const chordDefs={MAJ7:{label:'Maj7',degrees:['1','3','5','7'],intervals:[0,4,7,11]},MIN7:{label:'m7',degrees:['1','b3','5','b7'],intervals:[0,3,7,10]},DOM7:{label:'7',degrees:['1','3','5','b7'],intervals:[0,4,7,10]}};
+let showFretNumbers = true;
+let pentaQuality='MAJOR',pentaRoot='E',pentaPosition=1,pentaPractice='GUIDED',pentaPhase='DEGREE',pentaString=6,pentaPreview=false,pentaTargets=[],pentaFoundKeys=new Set(),pentaKeepPrevious=true,pentaComplete=false,pentaStringOrder=[6,5,4,3,2,1],pentaStringIndex=0,pentaFeedbackTimer=null,pentaDegreeIndex=0,pentaGuidedIndex=0,pentaHintVisible=false;
+const minorBoxPatterns={1:[[0,3],[0,2],[0,2],[0,2],[0,3],[0,3]],2:[[3,5],[2,5],[2,5],[2,4],[3,5],[3,5]],3:[[5,7],[5,7],[5,7],[4,7],[5,8],[5,7]],4:[[7,10],[7,10],[7,9],[7,9],[8,10],[7,10]],5:[[10,12],[10,12],[9,12],[9,12],[10,12],[10,12]]};
+let noteTypeEnabled = { natural: true, sharp: false, flat: false };
+let activeStrings = [true, false, false, false, false, false];
+const seqOrders = [[6,5,4,3,2,1], [1,2,3,4,5,6]];
+let seqPhase = 0, seqIndex = 0;
+
+function updateBoardScale(){
+    const ctrl = document.getElementById('string-controls');
+    const third = document.getElementById('third-controls');
+    const penta = document.getElementById('penta-controls');
+    const chord = document.getElementById('chord-controls');
+    const compressed = (ctrl.style.display === 'flex') || (third && third.style.display === 'flex') || (penta && penta.style.display === 'flex') || (chord && chord.style.display === 'flex');
+    document.documentElement.style.setProperty('--board-height', compressed ? '165px' : '250px');
+}
+
+function isStringActive(s){
+    if(mode === 'ALL') return true;
+    if(mode === 'SEQ') return s === targetStr;
+    if(mode === 'THIRD') return isThirdStringVisible(s);
+    if(mode === 'CHORD') return s === chordString;
+    if(mode === 'PENTA'){if(pentaPreview||!isPentaLineMode())return true;return s===pentaString||(pentaKeepPrevious&&completedPentaStrings().includes(s));}
+    return activeStrings[s-1];
+}
+
+function isNodeDisabled(node){
+    const s = parseInt(node.dataset.s);
+    const f = parseInt(node.dataset.f);
+    if(mode === 'THIRD') return isThirdNodeDisabled(s, f);
+    if(mode === 'CHORD') return s!==chordString || f>MAX_FRET;
+    if(mode === 'PENTA'){const win=pentaFretWindow();if(f<win.min||f>win.max)return true;if(pentaPreview)return false;if(pentaComplete)return true;return isPentaLineMode()&&s!==pentaString;}
+    if(f > 12) return true;
+    if(mode !== 'ALL') return s !== targetStr;
+    return false;
+}
+
+function render(){
+    const board = document.getElementById('fretboard');
+    const strLayer = board.querySelector('.string-layer');
+    board.innerHTML = ""; board.appendChild(strLayer);
+
+    for(let f=0; f<=MAX_FRET; f++){
+        const fd = document.createElement('div'); fd.className = 'fret';
+        fd.innerHTML = `<div class="fret-num">${f===0?'NUT':f}</div>`;
+        if([3,5,7,9,12,15,17,19,21,24].includes(f)){
+            if(f===12){ fd.innerHTML += `<div class="inlay inlay-12-top"></div><div class="inlay inlay-12-bottom"></div>`; }
+            else { fd.innerHTML += `<div class="inlay"></div>`; }
+        }
+        for(let s=1; s<=6; s++){
+            const n = document.createElement('div'); n.className = 'node';
+            n.style.top = `${(s-0.5)*(100/6)}%`;
+            // 0프렛 포함 모든 노드를 정중앙(50%)에 배치
+            n.style.left = "50%";
+            
+            // 정확한 음 계산
+            const idx = (stringRoots[s-1]+f)%12;
+            n.dataset.n1 = noteNames[idx];
+            n.dataset.n2 = altNames[noteNames[idx]] || "";
+            n.dataset.s = s; 
+            n.dataset.f = f;
+            n.onclick = ()=>check(n);
+            fd.appendChild(n);
+        }
+        board.appendChild(fd);
+    }
+    updateFretNumberVisibility();
+    updateStringVisibility();
+    newQuiz();
+}
+
+function updateStringVisibility(){
+    for(let s=1; s<=6; s++){
+        const active = isStringActive(s);
+        const strLine = document.querySelector(`.string.s${s}`);
+        if(strLine){strLine.classList.toggle('dimmed',!active);strLine.classList.toggle('current-string',mode==='PENTA'&&isPentaLineMode()&&s===pentaString&&!pentaPreview);}
+    }
+    document.querySelectorAll('.node').forEach(node=>{
+        const disabled=isNodeDisabled(node),key=`${node.dataset.s}-${node.dataset.f}`;
+        const retained=mode==='PENTA'&&pentaFoundKeys.has(key)&&(pentaComplete||(isPentaLineMode()&&pentaKeepPrevious));
+        node.classList.toggle('dimmed',disabled&&!retained);
+        node.classList.toggle('penta-clickable',mode==='PENTA'&&!disabled&&!pentaPreview&&!pentaFoundKeys.has(key));
+        node.title=mode==='PENTA'&&!disabled?`${node.dataset.s}번 줄 · ${node.dataset.f}프렛`:'';
+    });
+}
+
+function updateStatus(){
+    const range = getNoteTypeLabel();
+    if(mode === 'SEQ'){
+        const step = seqPhase * 6 + seqIndex + 1;
+        document.getElementById('status').innerText = `${range} · ${seqPhase === 0 ? '하행 6→1' : '상행 1→6'} · ${targetStr}번줄 · ${step}/12 · 남은 ${total-found}`;
+    }else{
+        document.getElementById('status').innerText = (mode === 'ALL') ? `${range} · 남은 ${total-found}` : `${range} · ${targetStr}번줄 · 남은 ${total-found}`;
+    }
+}
+
+function check(n){
+    if(mode === 'THIRD') return checkThird(n);
+    if(mode === 'CHORD') return checkChord(n);
+    if(mode === 'PENTA') return checkPenta(n);
+    if(parseInt(n.dataset.f)>12 || n.classList.contains('correct')) return;
+    if(mode!=='ALL' && parseInt(n.dataset.s)!==targetStr) return;
+
+    if(matchesTarget(n)){
+        n.classList.add('correct'); n.innerText = target;
+        found++; updateStatus();
+        if(found>=total) setTimeout(()=> mode === 'SEQ' ? nextSeqStep() : newQuiz(), 700);
+    }else{
+        n.classList.add('wrong'); n.innerText = n.dataset.n1;
+        setTimeout(()=>{ n.classList.remove('wrong'); n.innerText = ""; }, 450);
+    }
+}
+
+function newQuiz(){
+    if(mode === 'THIRD') return newThirdQuiz();
+    if(mode === 'CHORD') return newChordQuiz();
+    if(mode === 'PENTA') return newPentaQuiz();
+    document.querySelectorAll('.node').forEach(n=>{ n.classList.remove('correct', 'wrong', 'root-found', 'third-found'); n.innerText = ""; });
+    let pool = getNotePool();
+    target = pool[Math.floor(Math.random()*pool.length)];
+
+    if(mode==='ALL'){
+        targetStr = -1;
+        total = Array.from(document.querySelectorAll('.node')).filter(n=> parseInt(n.dataset.f)<=12 && matchesTarget(n) ).length;
+    }else if(mode==='SEQ'){
+        seqPhase = 0; seqIndex = 0;
+        targetStr = seqOrders[seqPhase][seqIndex];
+        total = countOnString(targetStr);
+    }else{
+        let poolStrings = activeStrings.map((v,i)=> v ? i+1 : null).filter(v=>v);
+        if(poolStrings.length===0) return;
+        targetStr = (mode==='ONE') ? poolStrings[0] : poolStrings[Math.floor(Math.random()*poolStrings.length)];
+        total = countOnString(targetStr);
+    }
+    if(total===0) return newQuiz();
+    document.getElementById('target-note').innerText = target;
+    found = 0; updateStatus(); updateStringVisibility();
+}
+
+function countOnString(stringNum){
+    return Array.from(document.querySelectorAll('.node')).filter(n=> parseInt(n.dataset.s)===stringNum && parseInt(n.dataset.f)<=12 && matchesTarget(n) ).length;
+}
+
+function nextSeqStep(){
+    seqIndex++;
+    if(seqIndex >= seqOrders[seqPhase].length){
+        if(seqPhase === 0){
+            seqPhase = 1; seqIndex = 0;
+        }else{
+            return newQuiz();
+        }
+    }
+    targetStr = seqOrders[seqPhase][seqIndex];
+    document.querySelectorAll('.node').forEach(n=>{ n.classList.remove('correct', 'wrong'); n.innerText = ""; });
+    total = countOnString(targetStr);
+    found = 0; updateStatus(); updateStringVisibility();
+    if(total===0) nextSeqStep();
+}
+
+function setM(m){
+    mode = m;
+    document.querySelectorAll('.footer .mode-btn').forEach(b=> b.classList.remove('active'));
+    document.getElementById('m-'+m).classList.add('active');
+    document.getElementById('string-controls').style.display = (m==='ALL' || m==='SEQ' || m==='THIRD' || m==='PENTA' || m==='CHORD') ? 'none' : 'flex';
+    document.getElementById('third-controls').style.display = (m==='THIRD') ? 'flex' : 'none';
+    document.getElementById('penta-controls').style.display = (m==='PENTA') ? 'flex' : 'none';
+    document.getElementById('chord-controls').style.display = (m==='CHORD') ? 'flex' : 'none';
+    document.querySelectorAll('.bulk-btn').forEach(btn=> btn.style.display = (m==='MULTI') ? '' : 'none');
+    
+    if(m==='THIRD'){
+        // 3도 찾기는 별도 줄 선택을 사용합니다.
+    } else if(m==='ONE'){
+        activeStrings = [true, false, false, false, false, false];
+        document.querySelectorAll('.strsel').forEach((btn,i)=> btn.classList.toggle('active', i===0));
+    } else if(m==='MULTI'){
+        activeStrings = [true,true,true,true,true,true];
+        document.querySelectorAll('.strsel').forEach(btn=> btn.classList.add('active'));
+    }
+    updateBoardScale(); updateFretNumberVisibility(); updateStringVisibility(); newQuiz();
+}
+
+
+function initChordControls(){
+    const nb=document.getElementById('chord-note-btns');
+    noteNames.forEach(n=>{const b=document.createElement('button');b.className='btn';b.id=`cn-${n.replace('#','s')}`;b.innerText=noteLabel(n);b.onclick=()=>{chordRootNote=canonicalNote(n);updateChordControls();if(mode==='CHORD')newChordQuiz();};nb.appendChild(b);});
+    const sb=document.getElementById('chord-str-btns');
+    for(let i=1;i<=6;i++){const b=document.createElement('button');b.className='btn';b.id=`cs-${i}`;b.innerText=i;b.onclick=()=>{chordString=i;updateChordControls();if(mode==='CHORD')newChordQuiz();};sb.appendChild(b);} updateChordControls();
+}
+function setChordQuality(q){chordQuality=q;updateChordControls();if(mode==='CHORD')newChordQuiz();}
+function setChordPractice(p){chordPractice=p;if(p==='RANDOM')advanceChordAssignment();updateChordControls();if(mode==='CHORD')newChordQuiz();}
+function chordRootPool(){return [...new Set(getNotePool().map(canonicalNote))];}
+function advanceChordAssignment(){if(chordPractice==='DIRECT')return;if(chordPractice==='RANDOM'){const pool=chordRootPool();if(pool.length)chordRootNote=pool[Math.floor(Math.random()*pool.length)];chordString=1+Math.floor(Math.random()*6);return;}if(chordPractice==='STRING_SEQ'){chordString=chordString===1?6:chordString-1;return;}if(chordPractice==='FULL_SEQ'){if(chordString>1){chordString--;return;}chordString=6;const pool=chordRootPool();if(pool.length){const idx=Math.max(0,pool.indexOf(chordRootNote));chordRootNote=pool[(idx+1)%pool.length];}}}
+function updateChordControls(){['MAJ7','MIN7','DOM7'].forEach(q=>document.getElementById(`cq-${q}`)?.classList.toggle('active',q===chordQuality));['DIRECT','RANDOM','STRING_SEQ','FULL_SEQ'].forEach(p=>document.getElementById(`cp-${p}`)?.classList.toggle('active',p===chordPractice));noteNames.forEach(n=>document.getElementById(`cn-${n.replace('#','s')}`)?.classList.toggle('active',canonicalNote(n)===chordRootNote));for(let i=1;i<=6;i++)document.getElementById(`cs-${i}`)?.classList.toggle('active',i===chordString);}
+function chordTargetNote(step){const d=chordDefs[chordQuality];return transpose(chordRootNote,d.intervals[step]);}
+function chordAdjacentPattern(degree){const thickCrossGB=chordString===2,thinCrossGB=chordString===3;const thick=thickCrossGB?{'b3':-1,'3':0,'5':3}:{'b3':-2,'3':-1,'5':2};const thin=thinCrossGB?{'b3':-5,'3':-4,'5':-1}:{'b3':-4,'3':-3,'5':0};return{thick:thick[degree],thin:thin[degree]};}
+function signedFret(n){return n===0?'같은F':`${n>0?'+':''}${n}F`;}
+function chordStepGuide(){const d=chordDefs[chordQuality];if(chordStep===0)return`${chordString}번줄에서 ${noteLabel(chordRootNote)} Root(1)`;const degree=d.degrees[chordStep];if(['3','b3','5'].includes(degree)){const p=chordAdjacentPattern(degree),parts=[];if(chordString<6)parts.push(`굵은 ${chordString+1}번 R→${signedFret(p.thick)}`);if(chordString>1)parts.push(`얇은 ${chordString-1}번 R→${signedFret(p.thin)}`);return`${degree}: ${parts.join(' / ')}${(chordString===2||chordString===3)?' · G↔B 1F보정':''}`;}if(degree==='7')return'7: 현재 Root -1F (또는 +11F)';if(degree==='b7')return'b7: 현재 Root -2F (또는 +10F)';return'';}
+function updateChordHelp(){const b=document.getElementById('chord-help-mobile');if(b)b.innerText=`${chordStepGuide()} · 같은 음이면 다른 옥타브도 정답`;}
+function resetChordNodes(){document.querySelectorAll('.node').forEach(n=>{n.classList.remove('correct','wrong','root-found','third-found','chord-root','chord-tone');n.innerText='';});}
+function newChordQuiz(){resetChordNodes();chordRootFret=-1;chordStep=0;targetStr=chordString;found=0;total=4;const d=chordDefs[chordQuality];document.getElementById('target-note').innerText=`${noteLabel(chordRootNote)} ${d.label} · 1`;updateChordStatus();updateChordHelp();updateStringVisibility();}
+function checkChord(n){const s=parseInt(n.dataset.s),f=parseInt(n.dataset.f),d=chordDefs[chordQuality];if(s!==chordString)return;if(chordStep===0){if(nodeMatchesNote(n,chordRootNote)){chordRootFret=f;chordStep=1;n.classList.add('chord-root');n.innerText='1';document.getElementById('target-note').innerText=`${noteLabel(chordRootNote)} ${d.label} · ${d.degrees[1]}`;updateChordStatus();updateChordHelp();updateStringVisibility();}else wrongChord(n);return;}const expected=chordTargetNote(chordStep);if(nodeMatchesNote(n,expected)){n.classList.add('chord-tone');n.innerText=d.degrees[chordStep];chordStep++;if(chordStep>=4){updateChordStatus();document.getElementById('target-note').innerText=`${noteLabel(chordRootNote)} ${d.label} ✓`;const b=document.getElementById('chord-help-mobile');if(b)b.innerText='완성!';setTimeout(()=>{advanceChordAssignment();updateChordControls();newChordQuiz();},850);}else{document.getElementById('target-note').innerText=`${noteLabel(chordRootNote)} ${d.label} · ${d.degrees[chordStep]}`;updateChordStatus();updateChordHelp();}}else wrongChord(n);}
+function wrongChord(n){n.classList.add('wrong');n.innerText=n.dataset.n2||n.dataset.n1;setTimeout(()=>{n.classList.remove('wrong');if(!n.classList.contains('chord-root')&&!n.classList.contains('chord-tone'))n.innerText='';},420);}
+function updateChordStatus(){const d=chordDefs[chordQuality],pl={DIRECT:'직접',RANDOM:'랜덤',STRING_SEQ:'줄순차',FULL_SEQ:'전체순차'}[chordPractice];document.getElementById('status').innerText=`${pl} · ${d.label} · ${chordString}번줄 · ${chordStep}/4`;}
+
+
+
+function canonicalNote(n){
+    const inverse = {};
+    Object.keys(altNames).forEach(k => inverse[altNames[k]] = k);
+    return inverse[n] || n;
+}
+function noteLabel(n){ return altNames[n] ? `${n}/${altNames[n]}` : n; }
+function noteIndex(n){ return noteNames.indexOf(canonicalNote(n)); }
+function transpose(n, semitones){ return noteNames[(noteIndex(n)+semitones+120)%12]; }
+function nodeMatchesNote(node, note){
+    const cn = canonicalNote(note);
+    return node.dataset.n1 === cn || node.dataset.n2 === note || node.dataset.n2 === altNames[cn];
+}
+function normalizeFret(f){ while(f<0) f+=12; return f; }
+function getNodeAt(s,f){ return document.querySelector(`.node[data-s="${s}"][data-f="${f}"]`); }
+
+function initThirdControls(){
+    const noteBox = document.getElementById('third-note-btns');
+    noteNames.forEach(n=>{
+        const b=document.createElement('button');
+        b.className='btn third-note';
+        b.id=`tn-${n.replace('#','s')}`;
+        b.innerText=noteLabel(n);
+        b.onclick=()=>selectThirdNote(n);
+        noteBox.appendChild(b);
+    });
+    const strBox = document.getElementById('third-str-btns');
+    for(let i=1;i<=6;i++){
+        const b=document.createElement('button');
+        b.className='btn third-str active';
+        b.id=`ts-${i}`;
+        b.innerText=i;
+        b.onclick=()=>toggleThirdString(i);
+        strBox.appendChild(b);
+    }
+    updateThirdControls();
+}
+
+function setThirdQuality(q){ thirdQuality=q; updateThirdControls(); if(mode==='THIRD') newQuiz(); }
+function setThirdMode(m){
+    thirdMode=m;
+    const more=document.getElementById('third-more');
+    if(more && m!=='RANDOM') more.open=true;
+    thirdSeqQueue=[]; thirdSeqIndex=0; updateThirdControls(); if(mode==='THIRD') newQuiz();
+}
+function selectThirdNote(n){
+    const onCount = thirdSelectedNotes.length;
+    if(thirdSelectedNotes.includes(n) && onCount === 1) return;
+    if(thirdSelectedNotes.includes(n)) thirdSelectedNotes = thirdSelectedNotes.filter(x=>x!==n);
+    else thirdSelectedNotes.push(n);
+    thirdFixedNote = thirdSelectedNotes[0];
+    thirdSeqQueue=[]; thirdSeqIndex=0; updateThirdControls(); if(mode==='THIRD') newQuiz();
+}
+function toggleThirdString(i){
+    const onCount = thirdActiveStrings.filter(Boolean).length;
+    if(thirdActiveStrings[i-1] && onCount === 1) return;
+    thirdActiveStrings[i-1]=!thirdActiveStrings[i-1];
+    thirdSeqQueue=[]; thirdSeqIndex=0;
+    updateThirdControls(); if(mode==='THIRD') newQuiz();
+}
+function thirdAllStrings(v){
+    thirdActiveStrings = thirdActiveStrings.map(()=>v);
+    if(!thirdActiveStrings.some(Boolean)) thirdActiveStrings[5]=true;
+    thirdSeqQueue=[]; thirdSeqIndex=0;
+    updateThirdControls(); if(mode==='THIRD') newQuiz();
+}
+function updateThirdControls(){
+    ['MAJOR','MINOR'].forEach(q=>{
+        const b=document.getElementById(`tq-${q}`);
+        if(b) b.classList.toggle('active', thirdQuality===q);
+    });
+    ['RANDOM','FIXED_NOTE','FIXED_STRING','FIXED_BOTH','SEQ'].forEach(m=>{
+        const b=document.getElementById(`tm-${m}`);
+        if(b) b.classList.toggle('active', thirdMode===m);
+    });
+    noteNames.forEach(n=>{
+        const b=document.getElementById(`tn-${n.replace('#','s')}`);
+        if(b) b.classList.toggle('active', thirdSelectedNotes.includes(n));
+    });
+    for(let i=1;i<=6;i++){
+        const b=document.getElementById(`ts-${i}`);
+        if(b) b.classList.toggle('active', thirdActiveStrings[i-1]);
+    }
+}
+function selectedThirdStrings(){
+    const arr = thirdActiveStrings.map((v,i)=>v?i+1:null).filter(Boolean);
+    return arr.length ? arr : [6];
+}
+function selectedThirdNotes(){ return Array.from(new Set(getNotePool().map(canonicalNote))); }
+function buildThirdSeqQueue(){
+    const strings=selectedThirdStrings().slice().sort((a,b)=>b-a);
+    const notes=selectedThirdNotes();
+    thirdSeqQueue=[];
+    notes.forEach(note=>strings.forEach(s=>thirdSeqQueue.push({note,string:s})));
+    thirdSeqIndex=0;
+}
+function pickThirdTask(){
+    if(thirdMode==='SEQ'){
+        if(thirdSeqQueue.length===0 || thirdSeqIndex>=thirdSeqQueue.length) buildThirdSeqQueue();
+        return thirdSeqQueue[thirdSeqIndex++];
+    }
+    const strings=selectedThirdStrings();
+    const note = (thirdMode==='FIXED_NOTE' || thirdMode==='FIXED_BOTH')
+        ? thirdSelectedNotes[Math.floor(Math.random()*thirdSelectedNotes.length)]
+        : selectedThirdNotes()[Math.floor(Math.random()*selectedThirdNotes().length)];
+    const string = strings[Math.floor(Math.random()*strings.length)];
+    return {note,string};
+}
+function getThirdTargets(rootString, rootFret, rootNote){
+    const semitones = thirdQuality==='MINOR' ? 3 : 4;
+    const target=transpose(rootNote,semitones);
+    const fretShift = thirdQuality==='MINOR' ? -1 : 0;
+    const candidates=[];
+    function pushTarget(s,f,label){
+        if(s<1||s>6) return;
+        // 루트를 누른 실제 프렛 기준의 공식 위치만 인정한다.
+        // f가 음수라서 +12 해야 하는 먼 옥타브 위치는 제외한다.
+        if(f<0 || f>MAX_FRET) return;
+        const node=getNodeAt(s,f);
+        if(!node || !nodeMatchesNote(node,target)) return;
+        const key=`${s}-${f}`;
+        if(!candidates.some(t=>t.key===key)) candidates.push({s,f,label,key});
+    }
+    pushTarget(rootString, rootFret+4+fretShift, '같은줄');
+    if(rootString-1>=1){
+        const thinOffset = (rootString===3) ? 0 : -1;
+        pushTarget(rootString-1, rootFret+thinOffset+fretShift, '얇은쪽');
+    }
+    if(rootString+1<=6){
+        const thickOffset = (rootString===2) ? -4 : -3;
+        pushTarget(rootString+1, rootFret+thickOffset+fretShift, '두꺼운쪽');
+    }
+    return {target,candidates};
+}
+function isThirdStringVisible(s){
+    if(thirdPhase==='ROOT') return s===thirdRootString;
+    return s===thirdRootString || thirdTargets.some(t=>t.s===s);
+}
+function isThirdNodeDisabled(s,f){
+    if(f>MAX_FRET) return true;
+    if(thirdPhase==='ROOT') return s!==thirdRootString;
+    return !(s===thirdRootString || thirdTargets.some(t=>t.s===s));
+}
+function resetThirdNodes(){
+    document.querySelectorAll('.node').forEach(n=>{ n.classList.remove('correct','wrong','root-found','third-found'); n.innerText=''; });
+}
+function newThirdQuiz(){
+    resetThirdNodes();
+    const task=pickThirdTask();
+    thirdRootNote=canonicalNote(task.note);
+    thirdRootString=task.string;
+    thirdRootFret=-1;
+    thirdTargetNote=transpose(thirdRootNote, thirdQuality==='MINOR' ? 3 : 4);
+    thirdTargets=[];
+    thirdPhase='ROOT';
+    targetStr=thirdRootString;
+    found=0; total=1;
+    document.getElementById('target-note').innerText=`${thirdRootString}번줄 ${noteLabel(thirdRootNote)}`;
+    updateThirdStatus(); updateStringVisibility();
+}
+function checkThird(n){
+    const f=parseInt(n.dataset.f), s=parseInt(n.dataset.s);
+    if(f>MAX_FRET || n.classList.contains('third-found')) return;
+    if(thirdPhase==='ROOT'){
+        if(s===thirdRootString && nodeMatchesNote(n, thirdRootNote)){
+            n.classList.add('root-found'); n.innerText=noteLabel(thirdRootNote);
+            thirdRootFret=f;
+            const result=getThirdTargets(thirdRootString, thirdRootFret, thirdRootNote);
+            thirdTargetNote=result.target; thirdTargets=result.candidates;
+            thirdPhase='THIRDS'; found=0; total=thirdTargets.length;
+            const qualityLabel = thirdQuality==='MINOR' ? '마이너 3도' : '메이저 3도';
+            document.getElementById('target-note').innerText=`${noteLabel(thirdRootNote)}→${qualityLabel} ${noteLabel(thirdTargetNote)}`;
+            updateThirdStatus(); updateStringVisibility();
+            if(total===0) setTimeout(newThirdQuiz, 500);
+        }else{
+            n.classList.add('wrong'); n.innerText=n.dataset.n2 || n.dataset.n1;
+            setTimeout(()=>{ n.classList.remove('wrong'); n.innerText=''; },450);
+        }
+        return;
+    }
+    const targetHit = thirdTargets.find(t=>t.s===s && t.f===f);
+    if(targetHit){
+        n.classList.add('third-found'); n.innerText=noteLabel(thirdTargetNote);
+        found++; updateThirdStatus();
+        if(found>=total) setTimeout(newThirdQuiz, 750);
+    }else{
+        n.classList.add('wrong'); n.innerText=n.dataset.n2 || n.dataset.n1;
+        setTimeout(()=>{ n.classList.remove('wrong'); n.innerText=''; },450);
+    }
+}
+function updateThirdStatus(){
+    const modeLabel = {
+        RANDOM:'랜덤',
+        FIXED_NOTE:`음 ${thirdSelectedNotes.map(noteLabel).join(',')}`,
+        FIXED_STRING:`줄 ${selectedThirdStrings().join(',')}`,
+        FIXED_BOTH:`${thirdSelectedNotes.map(noteLabel).join(',')}·${selectedThirdStrings().join(',')}줄`,
+        SEQ:`순차 ${thirdSeqIndex}/${thirdSeqQueue.length || '-'}`
+    }[thirdMode];
+    const qualityLabel = thirdQuality==='MINOR' ? '마이너 3도' : '메이저 3도';
+    if(thirdPhase==='ROOT') document.getElementById('status').innerText=`${qualityLabel} · ${modeLabel} · 루트찾기`;
+    else document.getElementById('status').innerText=`${qualityLabel} ${noteLabel(thirdTargetNote)} · 남은 ${total-found}`;
+}
+
+
+
+function pentaTargetKey(t){return `${t.s}-${t.f}`;}
+function pentaDisplayNote(n){return noteTypeEnabled.flat&&!noteTypeEnabled.sharp&&altNames[n]?altNames[n]:n;}
+function pentaDegreeSteps(){return pentaQuality==='MAJOR'?[{degree:'1',label:'루트',semitones:0},{degree:'2',label:'2도',semitones:2},{degree:'3',label:'3도',semitones:4},{degree:'5',label:'5도',semitones:7},{degree:'6',label:'6도',semitones:9}]:[{degree:'1',label:'루트',semitones:0},{degree:'♭3',label:'♭3도',semitones:3},{degree:'4',label:'4도',semitones:5},{degree:'5',label:'5도',semitones:7},{degree:'♭7',label:'♭7도',semitones:10}];}
+function currentPentaDegreeStep(){const a=pentaDegreeSteps();return a[Math.min(pentaDegreeIndex,a.length-1)];}
+function pentaGuidedSequence(){return [...pentaTargets].sort((a,b)=>(b.s-a.s)||(a.f-b.f));}
+function currentPentaGuidedTarget(){const a=pentaGuidedSequence();return a[Math.min(pentaGuidedIndex,Math.max(0,a.length-1))]||null;}
+function pentaDegreeLabel(d){return pentaDegreeSteps().find(x=>x.degree===d)?.label||`${d}도`;}
+function pentaFoundCountOnString(s){return pentaTargets.filter(t=>t.s===s&&pentaFoundKeys.has(pentaTargetKey(t))).length;}
+function pentaIntervalName(n){return({0:'같은 음',2:'온음 2프렛',3:'단3도 3프렛',4:'장3도 4프렛',5:'완전4도 5프렛',7:'완전5도 7프렛',9:'장6도 9프렛',10:'단7도 10프렛'})[n]||`${n}프렛`;}
+function isPentaLineMode(){return pentaPractice==='GUIDED'||pentaPractice==='STRING'||pentaPractice==='RANDOM_STRING';}
+function completedPentaStrings(){return isPentaLineMode()?pentaStringOrder.slice(0,pentaStringIndex):[];}
+function shuffledPentaStrings(){const a=[6,5,4,3,2,1];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function initPentaControls(){const select=document.getElementById('penta-root-select');noteNames.forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=noteLabel(n);select.appendChild(o);});updatePentaControls();}
+function resetPentaHint(){pentaHintVisible=false;document.querySelectorAll('.node.penta-hint-note').forEach(n=>n.classList.remove('penta-hint-note'));const b=document.getElementById('penta-hint-box-mobile');if(b){b.classList.remove('show');b.innerHTML='';}}
+function setPentaRoot(root){pentaRoot=root;pentaPreview=false;resetPentaHint();updatePentaControls();if(mode==='PENTA')newPentaQuiz();}
+function setPentaQuality(q){pentaQuality=q;pentaPreview=false;resetPentaHint();updatePentaControls();if(mode==='PENTA')newPentaQuiz();}
+function setPentaPractice(m){pentaPractice=m;pentaPreview=false;resetPentaHint();updatePentaControls();if(mode==='PENTA')newPentaQuiz();}
+function togglePentaKeepPrevious(){pentaKeepPrevious=!pentaKeepPrevious;updatePentaControls();renderPentaFoundNodes();updatePentaProgress();updateStringVisibility();}
+function setPentaPosition(p){pentaPosition=Math.max(1,Math.min(5,p));pentaPreview=false;resetPentaHint();updatePentaControls();if(mode==='PENTA')newPentaQuiz();}
+function changePentaPosition(d){setPentaPosition(((pentaPosition-1+d+5)%5)+1);}
+function restartPentaQuiz(){pentaPreview=false;resetPentaHint();updatePentaControls();newPentaQuiz();}
+function togglePentaPreview(){pentaPreview=!pentaPreview;if(pentaPreview)resetPentaHint();updatePentaControls();if(pentaPreview)showPentaPreview();else{renderPentaFoundNodes();updatePentaStatus();updatePentaProgress();updateStringVisibility();}}
+function togglePentaHint(){if(pentaPractice!=='GUIDED'||pentaPreview||pentaComplete)return;pentaHintVisible=!pentaHintVisible;renderPentaFoundNodes();if(pentaHintVisible)applyPentaHint();else{const b=document.getElementById('penta-hint-box-mobile');if(b){b.classList.remove('show');b.innerHTML='';}updateStringVisibility();}updatePentaControls();}
+function applyPentaHint(){
+    if(!pentaHintVisible||pentaPractice!=='GUIDED')return;
+    const t=currentPentaGuidedTarget();if(!t)return;
+    const n=document.querySelector(`.node[data-s="${t.s}"][data-f="${t.f}"]`);if(n)n.classList.add('penta-hint-note');
+    const step=pentaDegreeSteps().find(x=>x.degree===t.degree),open=noteNames[stringRoots[t.s-1]];
+    const interval=step?.semitones===0?`중심음 ${pentaDisplayNote(pentaRoot)} 자체가 루트입니다.`:`${pentaDegreeLabel(t.degree)}는 루트 ${pentaDisplayNote(pentaRoot)}에서 ${pentaIntervalName(step?.semitones??0)} 위의 ${pentaDisplayNote(t.note)}입니다.`;
+    let fret=t.f===0?`${t.s}번 줄 개방현입니다.`:t.f<=12?`${t.s}번 줄 개방음 ${pentaDisplayNote(open)}에서 오른쪽으로 ${t.f}프렛 이동하세요.`:`12프렛의 ${pentaDisplayNote(open)}에서 다시 ${t.f-12}프렛 이동한 ${t.f}프렛입니다.`;
+    const box=document.getElementById('penta-hint-box-mobile');if(box){box.innerHTML=`${interval}<br>${fret}<br><strong>${t.s}번 줄 ${t.f}프렛</strong>을 노란색으로 표시했습니다.`;box.classList.add('show');}updateStringVisibility();
+}
+function updatePentaControls(){
+    const sel=document.getElementById('penta-root-select');if(sel)sel.value=pentaRoot;const ps=document.getElementById('penta-practice-select');if(ps)ps.value=pentaPractice;
+    document.getElementById('pq-MAJOR')?.classList.toggle('active',pentaQuality==='MAJOR');document.getElementById('pq-MINOR')?.classList.toggle('active',pentaQuality==='MINOR');
+    const pos=document.getElementById('penta-position-label');if(pos)pos.textContent=`P${pentaPosition}/5`;
+    const pv=document.getElementById('penta-preview-btn');if(pv){pv.classList.toggle('active',pentaPreview);pv.textContent=pentaPreview?'숨기기':'정답 보기';}
+    const keep=document.getElementById('penta-keep-btn');if(keep){keep.classList.toggle('active',pentaKeepPrevious);keep.textContent=`유지 ${pentaKeepPrevious?'ON':'OFF'}`;keep.style.display=pentaPractice==='FULL'?'none':'';}
+    const hint=document.getElementById('penta-hint-btn');if(hint){hint.style.display=pentaPractice==='GUIDED'?'':'none';hint.classList.toggle('active',pentaHintVisible);hint.textContent=pentaHintVisible?'힌트 끄기':'힌트';hint.disabled=pentaPreview||pentaComplete;}
+    const restart=document.getElementById('penta-restart-btn');if(restart)restart.textContent=pentaComplete?'다시':'처음';
+}
+function pentaDegree(note){const ints=pentaQuality==='MAJOR'?[0,2,4,7,9]:[0,3,5,7,10],labs=pentaQuality==='MAJOR'?['1','2','3','5','6']:['1','♭3','4','5','♭7'];return labs[ints.indexOf((noteIndex(note)-noteIndex(pentaRoot)+12)%12)]||'';}
+function pentaPairInfo(){return pentaQuality==='MAJOR'?{other:transpose(pentaRoot,-3),quality:'마이너'}:{other:transpose(pentaRoot,3),quality:'메이저'};}
+function buildPentaTargets(){const mr=pentaQuality==='MINOR'?pentaRoot:transpose(pentaRoot,-3),a=noteIndex(mr),pat=minorBoxPatterns[pentaPosition],out=[];for(let s=1;s<=6;s++){pat[6-s].forEach(o=>{let f=a+o;while(f>24)f-=12;while(f<0)f+=12;const note=noteNames[(stringRoots[s-1]+f)%12];out.push({s,f,note,degree:pentaDegree(note)});});}return out;}
+function pentaFretWindow(){if(!pentaTargets.length)return{min:0,max:24};const fs=pentaTargets.map(t=>t.f);return{min:Math.min(...fs),max:Math.max(...fs)};}
+function currentPentaTargets(){if(pentaPractice==='GUIDED'){const t=currentPentaGuidedTarget();return t?[t]:[];}if(isPentaLineMode())return pentaTargets.filter(t=>t.s===pentaString);return pentaTargets;}
+function remainingPentaTargets(){return currentPentaTargets().filter(t=>!pentaFoundKeys.has(pentaTargetKey(t)));}
+function resetPentaNodes(){document.querySelectorAll('.node').forEach(n=>{n.classList.remove('correct','wrong','root-found','third-found','penta-found','penta-root','penta-preview-note','penta-clickable','penta-hint-note');n.innerText='';n.title='';});}
+function shouldShowPentaFound(t){if(pentaComplete)return true;if(!isPentaLineMode())return true;if(pentaKeepPrevious)return true;return t.s===pentaString;}
+function renderPentaFoundNodes(){resetPentaNodes();pentaFoundKeys.forEach(key=>{const t=pentaTargets.find(x=>pentaTargetKey(x)===key);if(!t||!shouldShowPentaFound(t))return;const n=getNodeAt(t.s,t.f);if(!n)return;n.classList.add('penta-found');if(t.degree==='1')n.classList.add('penta-root');n.innerText=t.degree;n.title=`${t.s}번 줄 · ${t.f}프렛 · ${pentaDisplayNote(t.note)} · ${t.degree}도`;});if(pentaHintVisible)applyPentaHint();}
+function setPentaFeedback(text='',type=''){const el=document.getElementById('penta-feedback-mobile');if(!el)return;clearTimeout(pentaFeedbackTimer);el.textContent=text;el.className=`penta-feedback-mobile${type?` ${type}`:''}`;if(text&&!pentaComplete)pentaFeedbackTimer=setTimeout(()=>{el.textContent='';el.className='penta-feedback-mobile';},type==='wrong'?1200:850);}
+function updatePentaProgress(){
+    const box=document.getElementById('penta-progress-mobile');if(!box)return;const chips=[];
+    if(pentaPractice==='GUIDED'){const cur=currentPentaGuidedTarget();[6,5,4,3,2,1].forEach(s=>{const found=pentaFoundCountOnString(s),total=pentaTargets.filter(t=>t.s===s).length,state=pentaComplete||(total&&found>=total)?'done':cur?.s===s?'current':'',count=cur?.s===s&&!pentaComplete?` ${found}/${total}`:'';chips.push(`<span class="penta-step-mobile ${state}">${s}번${count}</span>`);});}
+    else if(pentaPractice==='FULL')chips.push(`<span class="penta-step-mobile ${pentaComplete?'done':'current'}">전체 ${pentaFoundKeys.size}/12</span>`);
+    else pentaStringOrder.forEach((s,i)=>chips.push(`<span class="penta-step-mobile ${i<pentaStringIndex||pentaComplete?'done':i===pentaStringIndex?'current':''}">${s}</span>`));box.innerHTML=chips.join('');
+}
+function updatePentaHelp(){
+    const pair=pentaPairInfo(),degree=pentaQuality==='MAJOR'?'1·2·3·5·6':'1·♭3·4·5·♭7';
+    const guide={GUIDED:'6번 줄 낮은 프렛부터 한 음씩 찾고, 같은 줄의 두 음을 끝내면 5→4→3→2→1번 줄로 이동합니다. 모르면 힌트를 누르세요.',STRING:'6번 줄부터 줄별 두 음을 자유롭게 찾습니다.',RANDOM_STRING:'줄 순서를 무작위로 연습합니다.',FULL:'현재 포지션 12개를 한 번에 찾습니다.'}[pentaPractice];
+    document.getElementById('penta-help-mobile').innerHTML=`<strong>${pentaDisplayNote(pentaRoot)} ${pentaQuality==='MAJOR'?'메이저':'마이너'}</strong> · ${degree}<br>나란한조 ${pentaDisplayNote(pair.other)} ${pair.quality}<br>${guide} 유지 ON이면 지난 줄 정답이 남습니다.`;
+}
+function newPentaQuiz(){
+    resetPentaNodes();resetPentaHint();pentaTargets=buildPentaTargets();pentaFoundKeys=new Set();pentaComplete=false;pentaPhase=pentaPractice==='GUIDED'?'GUIDED_STRING':'STRING';pentaDegreeIndex=0;pentaGuidedIndex=0;
+    pentaStringOrder=pentaPractice==='RANDOM_STRING'?shuffledPentaStrings():[6,5,4,3,2,1];pentaStringIndex=0;const first=pentaPractice==='GUIDED'?currentPentaGuidedTarget():null;pentaString=first?.s||pentaStringOrder[0];pentaStringIndex=Math.max(0,pentaStringOrder.indexOf(pentaString));
+    setPentaFeedback('');updatePentaControls();updatePentaHelp();updatePentaProgress();document.getElementById('target-note').innerText=`${pentaDisplayNote(pentaRoot)} ${pentaQuality==='MAJOR'?'메이저':'마이너'} P${pentaPosition}`;if(pentaPreview)return showPentaPreview();updatePentaStatus();updateStringVisibility();
+}
+function showPentaPreview(){resetPentaNodes();pentaTargets=buildPentaTargets();pentaTargets.forEach(t=>{const n=getNodeAt(t.s,t.f);if(!n)return;n.classList.add('penta-preview-note');if(t.degree==='1')n.classList.add('penta-root');n.innerText=t.degree;n.title=`${t.s}번 줄 · ${t.f}프렛 · ${pentaDisplayNote(t.note)} · ${t.degree}도`;});document.getElementById('status').innerText='정답 확인 · 숨겨도 진행 유지';setPentaFeedback('정답 확인 중');updatePentaHelp();updatePentaProgress();updateStringVisibility();}
+function checkPenta(n){
+    if(pentaPreview||pentaComplete||isNodeDisabled(n))return;const s=+n.dataset.s,f=+n.dataset.f,key=`${s}-${f}`,t=currentPentaTargets().find(x=>x.s===s&&x.f===f);if(pentaFoundKeys.has(key))return;
+    if(t){pentaFoundKeys.add(key);n.classList.remove('penta-clickable','penta-hint-note');n.classList.add('penta-found');if(t.degree==='1')n.classList.add('penta-root');n.innerText=t.degree;setPentaFeedback(`정답 · ${s}번줄 ${f}프렛 · ${pentaDisplayNote(t.note)} (${pentaDegreeLabel(t.degree)})`,'correct');advancePentaQuiz();}
+    else{const actual=n.dataset.n2||n.dataset.n1;n.classList.add('wrong');n.innerText=actual;if(pentaPractice==='GUIDED'){const w=currentPentaGuidedTarget();setPentaFeedback(`현재는 ${w?.s||pentaString}번줄 ${w?pentaDegreeLabel(w.degree):'다음 음'} ${w?pentaDisplayNote(w.note):''} 찾기 · 여기는 ${actual}`,'wrong');}else setPentaFeedback(`아님 · ${s}번줄 ${f}프렛은 ${actual}`,'wrong');setTimeout(()=>{n.classList.remove('wrong');n.innerText='';},500);}
+}
+function advancePentaQuiz(){
+    if(remainingPentaTargets().length){if(pentaHintVisible)applyPentaHint();updatePentaStatus();updatePentaProgress();return;}
+    if(pentaPractice==='GUIDED'){const seq=pentaGuidedSequence(),done=seq[pentaGuidedIndex];if(pentaGuidedIndex<seq.length-1){pentaGuidedIndex++;const next=seq[pentaGuidedIndex];pentaString=next.s;pentaStringIndex=Math.max(0,pentaStringOrder.indexOf(pentaString));resetPentaHint();renderPentaFoundNodes();updatePentaStatus();updatePentaProgress();updatePentaControls();updateStringVisibility();setPentaFeedback(`${done?.s!==next.s?done.s+'번줄 완료 · ':''}${next.s}번줄 ${pentaDegreeLabel(next.degree)} ${pentaDisplayNote(next.note)}`,'correct');return;}}
+    else if(isPentaLineMode()&&pentaStringIndex<pentaStringOrder.length-1){pentaStringIndex++;pentaString=pentaStringOrder[pentaStringIndex];renderPentaFoundNodes();updatePentaStatus();updatePentaProgress();updateStringVisibility();return;}
+    pentaComplete=true;resetPentaHint();renderPentaFoundNodes();document.getElementById('status').innerText='완료 · 6→1번 줄 모양 확인 · [다시]로 반복';setPentaFeedback(`완료! P${pentaPosition}`,'correct');updatePentaControls();updatePentaProgress();updateStringVisibility();
+}
+function updatePentaStatus(){
+    const r=remainingPentaTargets().length;
+    if(pentaPractice==='GUIDED'){const t=currentPentaGuidedTarget();if(!t)return;const found=pentaFoundCountOnString(t.s),total=pentaTargets.filter(x=>x.s===t.s).length;document.getElementById('status').innerText=`${t.s}번줄 ${pentaDegreeLabel(t.degree)}(${pentaDisplayNote(t.note)}) 찾기 · ${pentaGuidedIndex+1}/12 · 줄 ${found}/${total}${pentaHintVisible?' · 힌트 ON':''}`;}
+    else if(pentaPractice==='STRING'||pentaPractice==='RANDOM_STRING')document.getElementById('status').innerText=`${pentaPractice==='RANDOM_STRING'?'랜덤 ':''}${pentaStringIndex+1}/6 · ${pentaString}번줄 · 남은 ${r}`;
+    else document.getElementById('status').innerText=`전체 ${pentaFoundKeys.size}/12 · 남은 ${r}`;
+}
+
+document.querySelectorAll('.strsel').forEach(btn=>{
+    btn.onclick = ()=>{
+        const idx = parseInt(btn.dataset.s)-1;
+        if(mode==='ONE'){
+            activeStrings = activeStrings.map(()=>false); activeStrings[idx]=true;
+            document.querySelectorAll('.strsel').forEach((b,i)=> b.classList.toggle('active', i===idx));
+        }else{
+            activeStrings[idx] = !activeStrings[idx]; btn.classList.toggle('active', activeStrings[idx]);
+        }
+        updateStringVisibility(); newQuiz();
+    };
+});
+
+function toggleAllStrings(v){
+    activeStrings = activeStrings.map(()=>v);
+    document.querySelectorAll('.strsel').forEach(btn=> btn.classList.toggle('active', v));
+    updateStringVisibility(); newQuiz();
+}
+
+function fixViewport(){ document.body.style.height = window.innerHeight + 'px'; }
+window.addEventListener('resize', ()=>{ fixViewport(); updateBoardScale(); });
+fixViewport(); initThirdControls();
+initChordControls(); initPentaControls(); updateBoardScale(); updateNoteTypeButtons(); updateFretNumberVisibility(); render();
+</script>
+</body>
+</html>

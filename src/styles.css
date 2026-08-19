@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Pretendard", "Inter", "Noto Sans KR", system-ui, sans-serif;
+}
+
+:root { color-scheme: dark; background: #020617; font-family: var(--font-sans); }
+* { box-sizing: border-box; }
+html, body, #root { min-width: 320px; min-height: 100%; margin: 0; }
+body {
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 50% -20%, rgba(14, 165, 233, .13), transparent 38%),
+    #020617;
+  color: #e2e8f0;
+}
+button, select { font: inherit; }
+button { touch-action: manipulation; }
+
+.control-panel {
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 1rem;
+  background: rgba(15,23,42,.72);
+  padding: .65rem .8rem;
+  max-height: 34dvh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+}
+.control-stack { display: flex; flex-direction: column; gap: .6rem; border-top: 1px solid rgba(255,255,255,.06); padding-top: .6rem; }
+.settings-details { border-radius: .75rem; background: rgba(2,6,23,.42); padding: .55rem .7rem; color: #94a3b8; font-size: .75rem; }
+.settings-details summary { cursor: pointer; font-weight: 800; }
+
+.fretboard-shell {
+  position: relative;
+  display: flex;
+  min-height: 210px;
+  height: 100%;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 1.1rem;
+  background: #030712;
+  padding: 42px 10px 18px;
+  box-shadow: inset 0 0 55px rgba(0,0,0,.55), 0 20px 50px rgba(0,0,0,.22);
+}
+.fretboard {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  max-height: 330px;
+  min-height: 175px;
+  overflow: visible;
+  border-block: 5px solid #1e293b;
+  border-radius: .35rem;
+  background:
+    radial-gradient(ellipse at 25% 20%, rgba(255,255,255,.045), transparent 22%),
+    repeating-linear-gradient(0deg, transparent 0 18px, rgba(255,255,255,.012) 19px, transparent 20px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(180deg, #36281e, #211711 48%, #39291e);
+  box-shadow: 0 0 0 1px #000, inset 0 12px 25px rgba(255,255,255,.025), inset 0 -14px 28px rgba(0,0,0,.35);
+}
+.string-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.guitar-string { position: absolute; left: 0; right: 0; height: var(--string-size, 1px); transform: translateY(-50%); background: linear-gradient(#f8fafc, #64748b 45%, #f8fafc 55%, #475569); box-shadow: 0 1px 2px #000; transition: opacity .18s, filter .18s; }
+.guitar-string.dimmed { opacity: .16; filter: saturate(.2); }
+.string-1 { --string-size: 1px; }.string-2 { --string-size: 1.5px; }.string-3 { --string-size: 2px; }.string-4 { --string-size: 2.7px; }.string-5 { --string-size: 3.5px; }.string-6 { --string-size: 4.2px; }
+.fret-slot { position: relative; min-width: 0; border-right: clamp(1px, .15vw, 3px) solid #94a3b8; z-index: 3; }
+.nut-slot { border-right: 4px solid #e2e8f0; background: rgba(2,6,23,.38); }
+.fret-number { position: absolute; top: -31px; left: 50%; transform: translateX(-50%); color: #64748b; font-size: clamp(7px, .72vw, 11px); font-weight: 900; white-space: nowrap; }
+.inlay { position: absolute; top: 50%; left: 50%; width: clamp(6px, .68vw, 11px); aspect-ratio: 1; transform: translate(-50%,-50%); border-radius: 999px; background: #d7dde5; opacity: .82; box-shadow: 0 0 0 2px rgba(15,23,42,.42), 0 0 7px rgba(226,232,240,.28); }
+.inlay.double { background: transparent; box-shadow: none; }
+.inlay.double::before, .inlay.double::after { content: ""; position: absolute; left: 0; width: 100%; aspect-ratio: 1; border-radius: inherit; background: #d7dde5; box-shadow: 0 0 0 2px rgba(15,23,42,.42), 0 0 7px rgba(226,232,240,.28); }
+.inlay.double::before { top: -60px; }.inlay.double::after { bottom: -60px; }
+.note-node {
+  position: absolute;
+  left: 50%;
+  z-index: 10;
+  display: grid;
+  width: clamp(17px, 2.35vw, 38px);
+  height: clamp(17px, 2.35vw, 38px);
+  transform: translate(-50%,-50%);
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: transparent;
+  font-size: clamp(6px, .72vw, 12px);
+  font-weight: 900;
+  line-height: 1;
+  transition: background-color .18s, border-color .18s, box-shadow .18s, opacity .18s;
+}
+.note-node:not(:disabled):hover { border-color: rgba(125,211,252,.75); background: rgba(14,165,233,.14); cursor: pointer; }
+.note-node.is-disabled { opacity: .16; cursor: default; }
+.note-node.is-correct { color: white; opacity: 1; border-color: rgba(255,255,255,.48); }
+.note-node.tone-note { background: #0f766e; box-shadow: 0 0 12px rgba(45,212,191,.24); }
+.note-node.tone-root { background: #2563eb; box-shadow: 0 0 14px rgba(59,130,246,.4); }
+.note-node.tone-third { background: #b45309; box-shadow: 0 0 14px rgba(245,158,11,.32); }
+.note-node.tone-fifth { background: #15803d; box-shadow: 0 0 14px rgba(34,197,94,.32); }
+.note-node.tone-seventh { background: #7e22ce; box-shadow: 0 0 14px rgba(168,85,247,.32); }
+.note-node.tone-penta { background: #6d28d9; box-shadow: 0 0 14px rgba(139,92,246,.32); }
+.note-node.is-wrong { color: white; background: #b91c1c; border-color: #fca5a5; opacity: 1; box-shadow: 0 0 14px rgba(239,68,68,.32); }
+.note-node.is-hint { border-color: #facc15; background: rgba(250,204,21,.14); opacity: 1; box-shadow: 0 0 0 3px rgba(250,204,21,.18); }
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .control-panel { gap: .35rem; border-radius: .75rem; padding: .4rem .5rem; }
+  .control-stack { gap: .35rem; padding-top: .35rem; }
+  .fretboard-shell { min-height: 0; border-radius: .75rem; padding: 24px 4px 6px; }
+  .fretboard { height: 100%; min-height: 130px; border-block-width: 3px; }
+  .fret-number { top: -20px; }
+  .note-node { width: clamp(14px, 2.5vw, 26px); height: clamp(14px, 2.5vw, 26px); font-size: clamp(5px, .9vw, 9px); }
+  .inlay.double::before { top: -35px; }.inlay.double::after { bottom: -35px; }
+}
+@media (max-width: 900px) and (orientation: portrait) { .rotate-warning { display: flex; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }

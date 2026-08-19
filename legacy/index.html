@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>기타 지판 트레이너 Pro (Master)</title>
+    <style>
+        :root { --primary: #4a90e2; --wood: #2c1e14; --fret: #c5a059; --string: #bdc3c7; --dot: #ecf0f1; }
+        body { font-family: 'Pretendard', sans-serif; background: #f4f7f6; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); width: 98%; max-width: 1400px; }
+        
+        .mode-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .tab { padding: 12px 25px; border: none; border-radius: 10px; background: #eee; cursor: pointer; font-weight: bold; }
+        .tab.active { background: var(--primary); color: white; }
+
+        .config-panel { background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 25px; }
+        .btn { padding: 8px 18px; border: 2px solid var(--primary); border-radius: 20px; background: white; color: var(--primary); cursor: pointer; font-weight: bold; }
+        .btn.active { background: var(--primary); color: white; }
+        .acc-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .acc-label { font-weight: bold; color: #555; margin-right: 2px; }
+        .str-btn { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #ddd; color: #666; font-weight: bold; cursor: pointer; }
+        .str-btn.active { background: #2c3e50; color: white; border-color: #2c3e50; }
+
+        .target-note { font-size: 5rem; font-weight: 900; color: #2c3e50; text-align: center; margin: 10px 0; min-height:1.15em; height:1.15em; line-height:1; display:flex; align-items:center; justify-content:center; white-space:nowrap; overflow:hidden; font-variant-numeric:tabular-nums; }
+        .status-msg { text-align: center; font-weight: bold; color: #555; height: 25px; }
+
+        .fretboard-wrap { overflow-x: hidden; background: #1a1a1a; padding: 50px 0; border-radius: 15px; position: relative; width:100%; }
+        .fretboard { position: relative; display: flex; width: 100%; height: 240px; background: var(--wood); border-top: 5px solid #444; border-bottom: 5px solid #444; margin: 0 auto; overflow:visible; }
+        
+        /* 줄 레이어 z-index 1로 고정 */
+        .string-layer { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+        .string { 
+            position: absolute;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(to bottom, #f5f5f5, #8a8a8a);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.9);
+            border-radius: 999px;
+            transition: opacity 0.3s;
+        }
+        .s1 { top: 8%; height: 1.2px; }
+        .s2 { top: 25%; height: 1.8px; }
+        .s3 { top: 42%; height: 2.8px; }
+        .s4 { top: 58%; height: 4px; }
+        .s5 { top: 75%; height: 5.5px; }
+        .s6 { top: 91%; height: 7px; }
+        .string.dimmed { opacity: 0.1; }
+
+        /* fret의 z-index를 아예 제거하여 자식(node)이 컨텍스트에 갇히지 않게 함 */
+        /* 실제 기타의 12평균율 간격처럼 고프렛으로 갈수록 폭이 좁아집니다. */
+        .fret { flex: 0 0 auto; width: var(--fret-width); box-sizing: border-box; border-right: 4px solid var(--fret); position: relative; }
+        .fret:first-child { border-right: 12px solid #ddd; } 
+        .inlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; background: var(--dot); border-radius: 50%; opacity: 0.8; box-shadow: 0 0 10px #fff; }
+        .inlay-12-top { transform: translate(-50%, -180%); }
+        .inlay-12-bottom { transform: translate(-50%, 80%); }
+
+        /* 음표시 레이어 z-index 10으로 올려서 줄(z-index 1) 위로 덮음 */
+        .node { position: absolute; width: clamp(24px, 2.8vw, 38px); height: clamp(24px, 2.8vw, 38px); border-radius: 50%; transform: translate(-50%, -50%); cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; font-weight: bold; color: transparent; }
+        .node.correct { background: #27ae60 !important; color: white !important; animation: none; }
+        .node.wrong { background: #e74c3c !important; color: white !important; animation: shakeWrong 0.25s ease; }
+        @keyframes popCorrect { 0% { transform: translate(-50%, -50%) scale(0.82); } 70% { transform: translate(-50%, -50%) scale(1.18); } 100% { transform: translate(-50%, -50%) scale(1); } }
+        @keyframes shakeWrong { 0%,100% { transform: translate(-50%, -50%); } 25% { transform: translate(calc(-50% - 5px), -50%); } 75% { transform: translate(calc(-50% + 5px), -50%); } }
+        .node.dimmed { opacity: 0.05; pointer-events: none; }
+        .node.root-found { background: #4a90e2 !important; color: white !important; box-shadow: 0 0 0 4px rgba(74,144,226,.18); }
+        .node.third-found { background: #f39c12 !important; color: white !important; box-shadow: 0 0 0 4px rgba(243,156,18,.18); }
+        .third-panel { display:none; margin-top:18px; padding-top:18px; border-top:1px solid #e6eaf0; }
+        .third-panel.show { display:block; }
+        .third-main-grid { display:grid; grid-template-columns:auto 1fr; gap:14px 24px; align-items:center; }
+        .third-section-title { font-size:.82rem; font-weight:800; color:#6b7280; white-space:nowrap; }
+        .third-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px; }
+        .third-main-grid .third-row { margin-top:0; }
+        .third-note-btn { min-width:52px; padding:8px 10px; border-radius:14px; }
+        .third-advanced { margin-top:16px; border:1px solid #e1e6ed; border-radius:14px; background:#fff; overflow:hidden; }
+        .third-advanced summary { cursor:pointer; list-style:none; padding:13px 16px; font-weight:800; color:#46505c; display:flex; justify-content:space-between; align-items:center; }
+        .third-advanced summary::-webkit-details-marker { display:none; }
+        .third-advanced summary::after { content:'펼치기 ▾'; font-size:.78rem; color:#8a94a1; }
+        .third-advanced[open] summary::after { content:'접기 ▴'; }
+        .third-advanced-body { padding:4px 16px 16px; border-top:1px solid #edf0f4; }
+        .third-help { color:#777; font-size:.88rem; line-height:1.45; margin-top:12px; padding:10px 12px; background:#f6f8fa; border-radius:10px; }
+        .third-root-text { color:#4a90e2; }
+        .penta-panel { display:none; margin-top:18px; padding-top:18px; border-top:1px solid #e6eaf0; }
+        .penta-panel.show { display:block; }
+        .penta-toolbar { display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; }
+        .penta-control { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+        .penta-control-label { font-size:.82rem; font-weight:800; color:#6b7280; white-space:nowrap; }
+        .penta-select { min-height:40px; padding:7px 32px 7px 12px; border:2px solid #d7dde5; border-radius:12px; background:#fff; color:#344050; font-weight:800; cursor:pointer; }
+        .penta-practice { margin-top:12px; display:flex; gap:8px 12px; flex-wrap:wrap; align-items:center; }
+        .penta-position { display:inline-flex; align-items:center; gap:6px; padding:4px; border:1px solid #e1e6ed; border-radius:14px; background:#fff; }
+        .penta-keep.active { background:#16a085; border-color:#16a085; color:#fff; }
+        .penta-progress { margin-top:10px; display:flex; gap:7px; flex-wrap:wrap; align-items:center; min-height:30px; }
+        .penta-step { padding:6px 10px; border-radius:999px; background:#e9edf2; color:#737d88; font-size:.78rem; font-weight:900; }
+        .penta-step.current { background:#2c3e50; color:#fff; box-shadow:0 0 0 3px rgba(44,62,80,.12); }
+        .penta-step.done { background:#d8f3eb; color:#08755f; }
+        .penta-feedback { min-height:24px; margin-top:7px; font-size:.88rem; font-weight:900; color:#68727e; }
+        .penta-feedback.correct { color:#16835f; }
+        .penta-feedback.wrong { color:#c0392b; }
+        .penta-position .btn { min-width:42px; padding:7px 12px; }
+        .penta-position-label { min-width:72px; text-align:center; font-weight:900; color:#344050; }
+        .penta-preview.active { background:#8e44ad; border-color:#8e44ad; color:#fff; }
+        .penta-hint-btn.active { background:#f39c12; border-color:#f39c12; color:#fff; }
+        .penta-hint-box { display:none; margin-top:9px; padding:10px 12px; border-radius:10px; background:#fff7e6; border:1px solid #f5d89c; color:#6d531e; font-size:.88rem; font-weight:800; line-height:1.5; }
+        .penta-hint-box.show { display:block; }
+        .node.penta-found { background:#8e44ad !important; color:#fff !important; box-shadow:0 0 0 4px rgba(142,68,173,.18); }
+        .node.penta-root { background:#2980b9 !important; color:#fff !important; box-shadow:0 0 0 4px rgba(41,128,185,.22); }
+        .node.penta-preview-note { background:rgba(142,68,173,.78) !important; color:#fff !important; box-shadow:0 0 0 3px rgba(142,68,173,.12); }
+        .node.penta-preview-note.penta-root { background:#2980b9 !important; }
+        .node.penta-hint-note { color:#fff !important; box-shadow:0 0 0 4px #f1c40f, 0 0 18px rgba(241,196,15,.9) !important; animation:pentaHintPulse .9s ease-in-out infinite alternate; }
+        @keyframes pentaHintPulse { from { transform:translate(-50%,-50%) scale(.95); } to { transform:translate(-50%,-50%) scale(1.13); } }
+        .node.penta-clickable { box-shadow:inset 0 0 0 2px rgba(255,255,255,.08); }
+        .node.penta-clickable:hover { background:rgba(74,144,226,.28); color:#fff; transform:translate(-50%,-50%) scale(1.1); box-shadow:0 0 0 4px rgba(74,144,226,.2); }
+        .node.penta-clickable:active { transform:translate(-50%,-50%) scale(.92); }
+        .string.current-string { opacity:1 !important; box-shadow:0 0 7px rgba(74,144,226,.95), 0 1px 4px rgba(0,0,0,.9); }
+        .penta-help { margin-top:12px; padding:12px 14px; background:#f6f8fa; border-radius:12px; color:#56606c; line-height:1.55; }
+        .penta-help strong { color:#2c3e50; }
+        .penta-guide-line { margin-top:4px; font-size:.9rem; }
+        .penta-legend { display:inline-flex; gap:12px; margin-top:6px; font-size:.82rem; }
+        .penta-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px; }
+        .penta-dot.root { background:#2980b9; }
+        .penta-dot.scale { background:#8e44ad; }
+        .third-target-text { color:#f39c12; }
+        .fret-num { position: absolute; top: -35px; width: 100%; text-align: center; color: #aaa; font-weight: bold; font-size: 0.9rem; letter-spacing: .02em; z-index: 12; pointer-events: none; transition: opacity .18s ease, transform .18s ease; }
+        .fretboard.hide-fret-nums .fret-num { opacity: 0; transform: translateY(-5px); }
+
+        .chord-panel { display:none; margin-top:18px; padding-top:18px; border-top:1px solid #e6eaf0; }
+        .chord-panel.show { display:block; }
+        .chord-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px; }
+        .chord-help { margin-top:12px; padding:12px 14px; background:#f6f8fa; border-radius:12px; color:#56606c; line-height:1.55; }
+        .node.chord-root { background:#2980b9 !important; color:#fff !important; box-shadow:0 0 0 4px rgba(41,128,185,.22); }
+        .node.chord-tone { background:#16a085 !important; color:#fff !important; box-shadow:0 0 0 4px rgba(22,160,133,.18); }
+    </style>
+<script type="text/javascript" nonce="f61e57b7cd354aa19f25128ae02" src="//local.adguard.org?ts=1786978268033&amp;type=content-script&amp;dmn=chatgpt.com&amp;url=https%3A%2F%2Fchatgpt.com%2Fbackend-api%2Festuary%2Fcontent%3Fid%3Dfile_000000002b988208b8b2d8a1dba42414%26fn%3Dindex_codetone%25283%2529.html%26cd%3Dattachment%26ts%3D496383%26p%3Dfs%26cid%3D1%26sig%3D4b99bdcfd7830ef9b57857e3119ea4716b9bbc7ff83f7068125e778fefc06bcb%26v%3D0&amp;app=chrome.exe&amp;css=2&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1&amp;stealth=1&amp;st-dnt"></script><script type="text/javascript" nonce="f61e57b7cd354aa19f25128ae02" src="//local.adguard.org?ts=1786978268033&amp;name=AdGuard%20Extra%20%28Beta%29&amp;name=AdGuard%20Popup%20Blocker%20%28Beta%29&amp;type=user-script"></script><script type="text/javascript" nonce="dacacaf0cccb4d7d99a53122c98" src="//local.adguard.org?ts=1785066142011&amp;type=content-script&amp;dmn=chatgpt.com&amp;url=https%3A%2F%2Fchatgpt.com%2Fbackend-api%2Festuary%2Fcontent%3Fid%3Dfile_00000000b8bc820695b1feed4b8d7a30%26fn%3Dindex_pentatonic%25283%2529.html%26cd%3Dattachment%26ts%3D495856%26p%3Dfs%26cid%3D1%26sig%3D4da7425e7e5d07197c7961de7a6cd01a61323bd2efa43d989a533c6ac0284f2e%26v%3D0&amp;app=chrome.exe&amp;css=2&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1&amp;stealth=1&amp;st-dnt"></script><script type="text/javascript" nonce="dacacaf0cccb4d7d99a53122c98" src="//local.adguard.org?ts=1785066142011&amp;name=AdGuard%20Extra%20%28Beta%29&amp;name=AdGuard%20Popup%20Blocker%20%28Beta%29&amp;type=user-script"></script></head>
+<body>
+
+<div class="container">
+    <div class="mode-tabs">
+        <button id="tab-ALL" class="tab active" onclick="switchMode('ALL')">한 음 싹 다 찾기</button>
+        <button id="tab-ONE" class="tab" onclick="switchMode('ONE')">한 줄 마스터</button>
+        <button id="tab-MULTI" class="tab" onclick="switchMode('MULTI')">다중 줄 연습</button>
+        <button id="tab-SEQ" class="tab" onclick="switchMode('SEQ')">6→1→6 순차</button>
+        <button id="tab-THIRD" class="tab" onclick="switchMode('THIRD')">3도 찾기</button>
+        <button id="tab-PENTA" class="tab" onclick="switchMode('PENTA')">펜타토닉</button>
+        <button id="tab-CHORD" class="tab" onclick="switchMode('CHORD')">1줄 코드톤</button>
+    </div>
+
+    <div class="config-panel">
+        <div style="display:flex; align-items:center; gap:20px;">
+        <div style="margin-left:auto;">
+            <a href="mobile_codetone.html" class="btn" style="text-decoration:none; display:inline-flex; align-items:center;">
+                모바일 버전 열기
+            </a>
+        </div>
+            <div class="acc-group" id="acc-group">
+                <span class="acc-label">음 선택</span>
+                <button id="acc-natural" class="btn active" onclick="toggleNoteType('natural')">기본</button>
+                <button id="acc-sharp" class="btn" onclick="toggleNoteType('sharp')">#</button>
+                <button id="acc-flat" class="btn" onclick="toggleNoteType('flat')">b</button>
+            </div>
+            <button id="fret-num-btn" class="btn active" onclick="toggleFretNumbers()">프렛번호 ON</button>
+            <div id="str-ctrl" style="display:none; align-items:center; gap:15px;">
+                <span id="bulk-ctrl">
+                    <button class="btn" style="border-color:#ccc; color:#666;" onclick="allStrings(true)">전체선택</button>
+                    <button class="btn" style="border-color:#ccc; color:#666;" onclick="allStrings(false)">전체해제</button>
+                </span>
+                <div id="str-btns"></div>
+            </div>
+        </div>
+
+        <div id="penta-panel" class="penta-panel">
+            <div class="penta-toolbar">
+                <div class="penta-control">
+                    <span class="penta-control-label">중심 스케일</span>
+                    <select id="penta-root-select" class="penta-select" onchange="setPentaRoot(this.value)"></select>
+                    <button id="penta-quality-MAJOR" class="btn active" onclick="setPentaQuality('MAJOR')">메이저</button>
+                    <button id="penta-quality-MINOR" class="btn" onclick="setPentaQuality('MINOR')">마이너</button>
+                </div>
+                <div class="penta-control">
+                    <span class="penta-control-label">포지션</span>
+                    <div class="penta-position">
+                        <button class="btn" onclick="changePentaPosition(-1)" aria-label="이전 포지션">◀</button>
+                        <span id="penta-position-label" class="penta-position-label">P1 / 5</span>
+                        <button class="btn" onclick="changePentaPosition(1)" aria-label="다음 포지션">▶</button>
+                    </div>
+                    <button id="penta-preview-btn" class="btn penta-preview" onclick="togglePentaPreview()">모양 보기</button>
+                </div>
+            </div>
+            <div class="penta-practice">
+                <span class="penta-control-label">출제 방식</span>
+                <select id="penta-practice-select" class="penta-select" onchange="setPentaPractice(this.value)">
+                    <option value="GUIDED">초심자 · 6→1번 줄 순서대로</option>
+                    <option value="STRING">줄별 반복 · 6→1</option>
+                    <option value="RANDOM_STRING">랜덤 줄</option>
+                    <option value="FULL">전체 테스트</option>
+                </select>
+                <button id="penta-keep-btn" class="btn penta-keep active" onclick="togglePentaKeepPrevious()">이전 줄 유지 ON</button>
+                <button id="penta-hint-btn" class="btn penta-hint-btn" onclick="togglePentaHint()">힌트 표시</button>
+                <button id="penta-restart-btn" class="btn" onclick="restartPentaQuiz()">처음부터</button>
+            </div>
+            <div id="penta-progress" class="penta-progress" aria-label="펜타토닉 진행 단계"></div>
+            <div id="penta-feedback" class="penta-feedback" aria-live="polite"></div>
+            <div id="penta-hint-box" class="penta-hint-box" aria-live="polite"></div>
+            <div id="penta-help" class="penta-help"></div>
+        </div>
+
+        <div id="chord-panel" class="chord-panel">
+            <div class="third-main-grid">
+                <span class="third-section-title">① 코드 타입</span>
+                <div class="chord-row" style="margin-top:0;">
+                    <button id="chord-quality-MAJ7" class="btn active" onclick="setChordQuality('MAJ7')">Maj7 · 1 3 5 7</button>
+                    <button id="chord-quality-MIN7" class="btn" onclick="setChordQuality('MIN7')">m7 · 1 b3 5 b7</button>
+                    <button id="chord-quality-DOM7" class="btn" onclick="setChordQuality('DOM7')">7 · 1 3 5 b7</button>
+                </div>
+                <span class="third-section-title">② 연습 방식</span>
+                <div class="chord-row" style="margin-top:0;">
+                    <button id="chord-practice-DIRECT" class="btn active" onclick="setChordPractice('DIRECT')">직접 선택</button>
+                    <button id="chord-practice-RANDOM" class="btn" onclick="setChordPractice('RANDOM')">무작위</button>
+                    <button id="chord-practice-STRING_SEQ" class="btn" onclick="setChordPractice('STRING_SEQ')">줄 순차 6→1</button>
+                    <button id="chord-practice-FULL_SEQ" class="btn" onclick="setChordPractice('FULL_SEQ')">전체 순차</button>
+                </div>
+                <span class="third-section-title">③ 루트 음</span>
+                <div id="chord-note-btns" class="chord-row" style="margin-top:0;"></div>
+                <span class="third-section-title">④ 연습 줄</span>
+                <div id="chord-str-btns" class="chord-row" style="margin-top:0;"></div>
+            </div>
+            <div id="chord-help" class="chord-help"><strong>한 줄에서 1 → 3/b3 → 5 → 7/b7 순서로 찾습니다.</strong><br>정답은 선택한 줄에서 해당 코드톤과 음이 같으면 어느 옥타브 위치든 인정합니다. 3/b3·5는 양쪽 인접 줄의 루트를 기준으로 찾고, G↔B(3↔2번 줄) 경계에서는 1프렛 보정합니다.</div>
+        </div>
+
+        <div id="third-panel" class="third-panel">
+            <div class="third-main-grid">
+                <span class="third-section-title">① 3도 종류</span>
+                <div class="third-row">
+                    <button id="third-quality-MAJOR" class="btn active" onclick="setThirdQuality('MAJOR')">메이저 3도</button>
+                    <button id="third-quality-MINOR" class="btn" onclick="setThirdQuality('MINOR')">마이너 3도</button>
+                </div>
+                <span class="third-section-title">② 연습 방식</span>
+                <div class="third-row">
+                    <button id="third-mode-RANDOM" class="btn active" onclick="setThirdMode('RANDOM')">랜덤</button>
+                    <button id="third-mode-FIXED_NOTE" class="btn" onclick="setThirdMode('FIXED_NOTE')">음 고정</button>
+                    <button id="third-mode-FIXED_STRING" class="btn" onclick="setThirdMode('FIXED_STRING')">줄 고정</button>
+                    <button id="third-mode-FIXED_BOTH" class="btn" onclick="setThirdMode('FIXED_BOTH')">음 + 줄 고정</button>
+                    <button id="third-mode-SEQ" class="btn" onclick="setThirdMode('SEQ')">순차 전부</button>
+                </div>
+            </div>
+            <details id="third-advanced" class="third-advanced">
+                <summary>③ 출제 범위 설정</summary>
+                <div class="third-advanced-body">
+                    <div class="third-row">
+                        <span class="acc-label">루트 음</span>
+                        <div id="third-note-btns" class="third-row" style="margin-top:0;"></div>
+                    </div>
+                    <div class="third-row">
+                        <span class="acc-label">출제 줄</span>
+                        <button class="btn" style="border-color:#ccc; color:#666;" onclick="thirdAllStrings(true)">전체선택</button>
+                        <button class="btn" style="border-color:#ccc; color:#666;" onclick="thirdAllStrings(false)">전체해제</button>
+                        <div id="third-str-btns" class="third-row" style="margin-top:0;"></div>
+                    </div>
+                </div>
+            </details>
+            <div class="third-help">제시된 줄에서 루트를 찾은 뒤, 선택한 메이저 3도 또는 마이너 3도를 같은 줄과 인접 줄의 가능한 위치에서 찾습니다.</div>
+        </div>
+    </div>
+
+    <div id="target-desc" style="text-align:center; color:#7f8c8d; font-weight:bold;">지판 전체에서 다음 음을 모두 찾으세요</div>
+    <div class="target-note" id="target-note">-</div>
+    <div id="status" class="status-msg">남은 개수: -</div>
+
+    <div class="fretboard-wrap">
+        <div class="fretboard" id="fretboard">
+            <div class="string-layer" id="string-layer">
+                <div class="string s6"></div><div class="string s5"></div><div class="string s4"></div>
+                <div class="string s3"></div><div class="string s2"></div><div class="string s1"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const noteNames = ["E", "F", "F#", "G", "G#", "A", "A#", "B", "C", "C#", "D", "D#"];
+    const altNames = { "F#":"Gb", "G#":"Ab", "A#":"Bb", "C#":"Db", "D#":"Eb" };
+    const naturalNames = noteNames.filter(n => !n.includes('#'));
+    const sharpNames = noteNames.filter(n => n.includes('#'));
+    const flatNames = Object.values(altNames);
+
+    function getNotePool() {
+        let pool = [];
+        if(noteTypeEnabled.natural) pool = pool.concat(naturalNames);
+        if(noteTypeEnabled.sharp) pool = pool.concat(sharpNames);
+        if(noteTypeEnabled.flat) pool = pool.concat(flatNames);
+        return pool.length ? pool : naturalNames;
+    }
+
+    function updateNoteTypeButtons() {
+        document.getElementById('acc-natural').classList.toggle('active', noteTypeEnabled.natural);
+        document.getElementById('acc-sharp').classList.toggle('active', noteTypeEnabled.sharp);
+        document.getElementById('acc-flat').classList.toggle('active', noteTypeEnabled.flat);
+    }
+
+    function getNoteTypeLabel() {
+        const labels = [];
+        if(noteTypeEnabled.natural) labels.push('기본');
+        if(noteTypeEnabled.sharp) labels.push('#');
+        if(noteTypeEnabled.flat) labels.push('b');
+        return labels.join(' + ');
+    }
+
+    function toggleNoteType(type) {
+        const enabledCount = Object.values(noteTypeEnabled).filter(Boolean).length;
+        if(noteTypeEnabled[type] && enabledCount === 1) return; // 최소 하나는 항상 켜두기
+        noteTypeEnabled[type] = !noteTypeEnabled[type];
+        updateNoteTypeButtons();
+        newQuiz();
+    }
+
+    function matchesTarget(n) {
+        return n.dataset.n1 === targetNote || n.dataset.n2 === targetNote;
+    }
+
+    function updateFretNumberVisibility() {
+        const board = document.getElementById('fretboard');
+        const btn = document.getElementById('fret-num-btn');
+        if(board) board.classList.toggle('hide-fret-nums', !showFretNumbers);
+        if(btn) {
+            btn.classList.toggle('active', showFretNumbers);
+            btn.innerText = showFretNumbers ? '프렛번호 ON' : '프렛번호 OFF';
+        }
+    }
+
+    function toggleFretNumbers() {
+        showFretNumbers = !showFretNumbers;
+        updateFretNumberVisibility();
+    }
+
+    
+    // 정확한 표준 튜닝 (1번줄부터 6번줄 순서: E, B, G, D, A, E)
+    // 0:E, 7:B, 3:G, 10:D, 5:A, 0:E
+    const stringRoots = [0, 7, 3, 10, 5, 0];
+    const MAX_FRET = 24;
+
+    // 화면상의 전체 지판 폭은 유지하면서 실제 기타의 12평균율 프렛 간격을 적용합니다.
+    // n번째 프렛까지의 거리는 scaleLength * (1 - 2^(-n/12))이므로,
+    // 각 프렛 칸은 이전 칸보다 약 5.6%씩 좁아집니다.
+    // PC에서는 0~24프렛 전체가 한 화면에 들어오도록 폭을 백분율로 계산한다.
+    // 실제 기타의 12평균율 비율은 유지하되 고정 픽셀 폭/가로 스크롤은 사용하지 않는다.
+    const NUT_SLOT_RATIO = 0.035;
+    const FRET_SCALE_RATIO =
+        (1 - NUT_SLOT_RATIO) / (1 - Math.pow(2, -MAX_FRET / 12));
+
+    function getFretSlotWidth(fret) {
+        if(fret === 0) return NUT_SLOT_RATIO * 100;
+        return FRET_SCALE_RATIO * (
+            Math.pow(2, -(fret - 1) / 12) - Math.pow(2, -fret / 12)
+        ) * 100;
+    }
+    
+    let currentMode = 'ALL';
+    let thirdMode = 'RANDOM';
+    let thirdQuality = 'MAJOR';
+    let thirdFixedNote = 'C';
+    let thirdSelectedNotes = ['C'];
+    let thirdActiveStrings = [true, true, true, true, true, true];
+    let thirdPhase = 'ROOT';
+    let thirdRootNote = 'C', thirdRootString = 6, thirdRootFret = -1, thirdTargetNote = 'E';
+    let thirdTargets = [], thirdSeqQueue = [], thirdSeqIndex = 0;
+    let chordQuality = 'MAJ7', chordPractice = 'DIRECT', chordRootNote = 'C', chordString = 6, chordRootFret = -1, chordStep = 0;
+    const chordDefs = { MAJ7:{label:'Maj7',degrees:['1','3','5','7'],intervals:[0,4,7,11]}, MIN7:{label:'m7',degrees:['1','b3','5','b7'],intervals:[0,3,7,10]}, DOM7:{label:'7',degrees:['1','3','5','b7'],intervals:[0,4,7,10]} };
+    let showFretNumbers = true;
+    let pentaQuality = 'MAJOR', pentaRoot = 'E', pentaPosition = 1;
+    let pentaPractice = 'GUIDED', pentaPhase = 'DEGREE', pentaString = 6, pentaPreview = false;
+    let pentaTargets = [], pentaFoundKeys = new Set();
+    let pentaKeepPrevious = true, pentaComplete = false;
+    let pentaStringOrder = [6,5,4,3,2,1], pentaStringIndex = 0;
+    let pentaFeedbackTimer = null, pentaDegreeIndex = 0, pentaGuidedIndex = 0, pentaHintVisible = false;
+    const minorBoxPatterns = {
+        1:[[0,3],[0,2],[0,2],[0,2],[0,3],[0,3]],
+        2:[[3,5],[2,5],[2,5],[2,4],[3,5],[3,5]],
+        3:[[5,7],[5,7],[5,7],[4,7],[5,8],[5,7]],
+        4:[[7,10],[7,10],[7,9],[7,9],[8,10],[7,10]],
+        5:[[10,12],[10,12],[9,12],[9,12],[10,12],[10,12]]
+    };
+    let noteTypeEnabled = { natural: true, sharp: false, flat: false };
+    let activeOne = 1, activeMulti = [true, true, true, true, true, true];
+    let targetNote = "", targetStrNum = -1, foundCount = 0, totalToFind = 0;
+    const seqOrders = [[6,5,4,3,2,1], [1,2,3,4,5,6]];
+    let seqPhase = 0, seqIndex = 0;
+
+    function init() {
+        const btnBox = document.getElementById('str-btns');
+        for(let i=1; i<=6; i++) {
+            const b = document.createElement('button');
+            b.className = 'str-btn'; b.id = `sbtn-${i}`; b.innerText = i;
+            b.onclick = () => {
+                if(currentMode === 'ONE') activeOne = i;
+                else activeMulti[i-1] = !activeMulti[i-1];
+                updateUI(); newQuiz();
+            };
+            btnBox.appendChild(b);
+        }
+        initThirdControls();
+        initChordControls();
+        initPentaControls();
+        updateNoteTypeButtons();
+        updateFretNumberVisibility();
+        renderBoard();
+    }
+
+    function renderBoard() {
+        const board = document.getElementById('fretboard');
+        const strLayer = document.getElementById('string-layer');
+        board.innerHTML = ""; board.appendChild(strLayer);
+        board.style.width = `100%`;
+
+        for(let f=0; f<=MAX_FRET; f++) {
+            const fd = document.createElement('div'); fd.className = 'fret';
+            fd.dataset.f = f;
+            fd.style.setProperty('--fret-width', `${getFretSlotWidth(f)}%`);
+            fd.innerHTML = `<div class="fret-num">${f===0?'NUT':f}</div>`;
+            
+            if([3,5,7,9,12,15,17,19,21,24].includes(f)) {
+                if(f===12) {
+                    fd.innerHTML += `<div class="inlay inlay-12-top"></div><div class="inlay inlay-12-bottom"></div>`;
+                } else {
+                    fd.innerHTML += `<div class="inlay"></div>`;
+                }
+            }
+
+            for(let s=1; s<=6; s++) {
+                const n = document.createElement('div'); n.className = 'node';
+                n.style.top = `${(s-0.5)*(100/6)}%`;
+                // 0프렛을 포함하여 모든 프렛의 노드를 정중앙(50%)에 맞춤
+                n.style.left = "50%";
+                
+                // 정확한 음 계산 (s는 1~6번 줄)
+                const idx = (stringRoots[s-1] + f) % 12;
+                n.dataset.n1 = noteNames[idx];
+                n.dataset.n2 = altNames[noteNames[idx]] || "";
+                n.dataset.s = s; 
+                n.dataset.f = f;
+                n.onclick = () => check(n); fd.appendChild(n);
+            }
+            board.appendChild(fd);
+        }
+        updateFretNumberVisibility();
+        updateUI(); newQuiz();
+    }
+
+    function switchMode(m) {
+        currentMode = m;
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.id === `tab-${m}`));
+        document.getElementById('str-ctrl').style.display = (m === 'ALL' || m === 'SEQ' || m === 'THIRD' || m === 'PENTA' || m === 'CHORD' ? 'none' : 'flex');
+        document.getElementById('bulk-ctrl').style.display = (m === 'MULTI' ? 'inline' : 'none');
+        document.getElementById('third-panel').classList.toggle('show', m === 'THIRD');
+        document.getElementById('penta-panel').classList.toggle('show', m === 'PENTA');
+        document.getElementById('chord-panel').classList.toggle('show', m === 'CHORD');
+        updateUI(); newQuiz();
+    }
+
+    function isStringActive(i) {
+        if(currentMode === 'ALL') return true;
+        if(currentMode === 'ONE') return activeOne === i;
+        if(currentMode === 'MULTI') return activeMulti[i-1];
+        if(currentMode === 'SEQ') return targetStrNum === i;
+        if(currentMode === 'THIRD') return isThirdStringVisible(i);
+        if(currentMode === 'CHORD') return i === chordString;
+        if(currentMode === 'PENTA') {
+            if(pentaPreview || !isPentaLineMode()) return true;
+            return i === pentaString || (pentaKeepPrevious && completedPentaStrings().includes(i));
+        }
+        return true;
+    }
+
+    function isNodeDisabled(n) {
+        const f = parseInt(n.dataset.f);
+        const s = parseInt(n.dataset.s);
+        if(currentMode === 'THIRD') return isThirdNodeDisabled(s, f);
+        if(currentMode === 'CHORD') return s !== chordString || f > MAX_FRET;
+        if(currentMode === 'PENTA') {
+            const win = pentaFretWindow();
+            if(f < win.min || f > win.max) return true;
+            if(pentaPreview) return false;
+            if(pentaComplete) return true;
+            return isPentaLineMode() && s !== pentaString;
+        }
+        if(f > 12) return true;
+        if(currentMode === 'ONE' || currentMode === 'MULTI' || currentMode === 'SEQ') return s !== targetStrNum;
+        return false;
+    }
+
+    function updateUI() {
+        for(let i=1; i<=6; i++) {
+            const b = document.getElementById(`sbtn-${i}`);
+            if(b) b.classList.toggle('active', isStringActive(i));
+            const strLine = document.querySelector(`.string.s${i}`);
+            if(strLine) {
+                strLine.classList.toggle('dimmed', !isStringActive(i));
+                strLine.classList.toggle('current-string', currentMode === 'PENTA' && isPentaLineMode() && i === pentaString && !pentaPreview);
+            }
+        }
+        document.querySelectorAll('.node').forEach(n => {
+            const disabled = isNodeDisabled(n);
+            const key = `${n.dataset.s}-${n.dataset.f}`;
+            const retainedFound = currentMode === 'PENTA' && pentaFoundKeys.has(key) && (pentaComplete || (isPentaLineMode() && pentaKeepPrevious));
+            n.classList.toggle('dimmed', disabled && !retainedFound);
+            n.classList.toggle('penta-clickable', currentMode === 'PENTA' && !disabled && !pentaPreview && !pentaFoundKeys.has(key));
+            n.title = currentMode === 'PENTA' && !disabled ? `${n.dataset.s}번 줄 · ${n.dataset.f}프렛` : '';
+        });
+    }
+
+    function check(n) {
+        if(currentMode === 'THIRD') return checkThird(n);
+        if(currentMode === 'CHORD') return checkChord(n);
+        if(currentMode === 'PENTA') return checkPenta(n);
+        if(parseInt(n.dataset.f) > 12 || n.classList.contains('correct')) return;
+        const s = parseInt(n.dataset.s);
+        if((currentMode === 'ONE' || currentMode === 'MULTI' || currentMode === 'SEQ') && s !== targetStrNum) return;
+
+        if(matchesTarget(n)) {
+            n.classList.add('correct'); n.innerText = targetNote;
+            foundCount++; updateScore();
+            if(foundCount >= totalToFind) {
+                setTimeout(() => currentMode === 'SEQ' ? nextSeqStep() : newQuiz(), 700);
+            }
+        } else {
+            n.classList.add('wrong'); n.innerText = n.dataset.n1;
+            setTimeout(() => { n.classList.remove('wrong'); n.innerText = ""; }, 500);
+        }
+    }
+
+    function newQuiz() {
+        if(currentMode === 'THIRD') return newThirdQuiz();
+        if(currentMode === 'CHORD') return newChordQuiz();
+        if(currentMode === 'PENTA') return newPentaQuiz();
+        const nodes = document.querySelectorAll('.node');
+        nodes.forEach(n => {
+            n.classList.remove('correct','wrong'); n.innerText = "";
+            const s = parseInt(n.dataset.s);
+            const isDim = (parseInt(n.dataset.f) > 12) || (currentMode === 'ONE' && s !== activeOne) || (currentMode === 'MULTI' && !activeMulti[s-1]);
+            n.classList.toggle('dimmed', isDim);
+        });
+
+        let pool = getNotePool();
+        targetNote = pool[Math.floor(Math.random()*pool.length)];
+        
+        if(currentMode === 'ALL') {
+            targetStrNum = -1;
+            document.getElementById('target-desc').innerText = "지판 전체(0-12F)에서 찾기";
+            totalToFind = Array.from(nodes).filter(n => parseInt(n.dataset.f) <= 12 && matchesTarget(n)).length;
+        } else if(currentMode === 'SEQ') {
+            seqPhase = 0; seqIndex = 0;
+            targetStrNum = seqOrders[seqPhase][seqIndex];
+            document.getElementById('target-desc').innerText = seqDesc();
+            totalToFind = countOnString(targetStrNum, nodes);
+        } else {
+            const activeIdxs = (currentMode === 'ONE') ? [activeOne] : activeMulti.map((v,i)=>v?i+1:null).filter(v=>v);
+            if(activeIdxs.length === 0) return;
+            targetStrNum = activeIdxs[Math.floor(Math.random()*activeIdxs.length)];
+            document.getElementById('target-desc').innerText = `${targetStrNum}번 줄에서 찾기`;
+            totalToFind = countOnString(targetStrNum, nodes);
+        }
+        if(totalToFind === 0) return newQuiz();
+        document.getElementById('target-note').innerText = targetNote;
+        foundCount = 0; updateScore(); updateUI();
+    }
+
+    function countOnString(stringNum, nodes = document.querySelectorAll('.node')) {
+        return Array.from(nodes).filter(n => parseInt(n.dataset.s) === stringNum && parseInt(n.dataset.f) <= 12 && matchesTarget(n)).length;
+    }
+
+    function seqDesc() {
+        const dir = seqPhase === 0 ? '하행 6→1' : '상행 1→6';
+        return `${dir} · ${targetStrNum}번 줄에서 찾기`;
+    }
+
+    function nextSeqStep() {
+        seqIndex++;
+        if(seqIndex >= seqOrders[seqPhase].length) {
+            if(seqPhase === 0) {
+                seqPhase = 1; seqIndex = 0;
+            } else {
+                return newQuiz();
+            }
+        }
+        targetStrNum = seqOrders[seqPhase][seqIndex];
+        document.querySelectorAll('.node').forEach(n => { n.classList.remove('correct','wrong'); n.innerText = ""; });
+        totalToFind = countOnString(targetStrNum);
+        foundCount = 0;
+        document.getElementById('target-desc').innerText = seqDesc();
+        updateScore(); updateUI();
+        if(totalToFind === 0) nextSeqStep();
+    }
+
+    function updateScore() {
+        if(currentMode === 'THIRD') return updateThirdStatus();
+        if(currentMode === 'CHORD') return updateChordStatus();
+        if(currentMode === 'PENTA') return updatePentaStatus();
+        const range = `출제: ${getNoteTypeLabel()}`;
+        if(currentMode === 'SEQ') {
+            const step = seqPhase * 6 + seqIndex + 1;
+            document.getElementById('status').innerText = `${range} · 단계 ${step}/12 · 남은 개수: ${totalToFind - foundCount}`;
+        } else {
+            document.getElementById('status').innerText = `${range} · 남은 개수: ${totalToFind - foundCount}`;
+        }
+    }
+
+    function canonicalNote(n) {
+        const inverse = {};
+        Object.keys(altNames).forEach(k => inverse[altNames[k]] = k);
+        return inverse[n] || n;
+    }
+
+    function noteLabel(n) {
+        return altNames[n] ? `${n}/${altNames[n]}` : n;
+    }
+
+    function noteIndex(n) {
+        return noteNames.indexOf(canonicalNote(n));
+    }
+
+    function transpose(n, semitones) {
+        return noteNames[(noteIndex(n) + semitones + 120) % 12];
+    }
+
+    function nodeMatchesNote(node, note) {
+        const cn = canonicalNote(note);
+        return node.dataset.n1 === cn || node.dataset.n2 === note || node.dataset.n2 === altNames[cn];
+    }
+
+    function normalizeFret(f) {
+        while(f < 0) f += 12;
+        return f;
+    }
+
+    function initChordControls() {
+        const noteBox = document.getElementById('chord-note-btns');
+        noteNames.forEach(n => {
+            const b = document.createElement('button');
+            b.className = 'btn'; b.id = `cn-${n.replace('#','s')}`; b.innerText = noteLabel(n);
+            b.onclick = () => { chordRootNote = canonicalNote(n); updateChordControls(); if(currentMode === 'CHORD') newChordQuiz(); };
+            noteBox.appendChild(b);
+        });
+        const strBox = document.getElementById('chord-str-btns');
+        for(let i=1;i<=6;i++){
+            const b=document.createElement('button'); b.className='btn'; b.id=`cs-${i}`; b.innerText=`${i}번줄`;
+            b.onclick=()=>{ chordString=i; updateChordControls(); if(currentMode==='CHORD') newChordQuiz(); };
+            strBox.appendChild(b);
+        }
+        updateChordControls();
+    }
+
+    function setChordQuality(q){ chordQuality=q; updateChordControls(); if(currentMode==='CHORD') newChordQuiz(); }
+    function setChordPractice(p){ chordPractice=p; if(p==='RANDOM') advanceChordAssignment(); updateChordControls(); if(currentMode==='CHORD') newChordQuiz(); }
+    function chordRootPool(){ return [...new Set(getNotePool().map(canonicalNote))]; }
+    function advanceChordAssignment(){
+        if(chordPractice==='DIRECT') return;
+        if(chordPractice==='RANDOM'){
+            const pool=chordRootPool();
+            if(pool.length) chordRootNote=pool[Math.floor(Math.random()*pool.length)];
+            chordString=1+Math.floor(Math.random()*6);
+            return;
+        }
+        if(chordPractice==='STRING_SEQ'){
+            chordString = chordString===1 ? 6 : chordString-1;
+            return;
+        }
+        if(chordPractice==='FULL_SEQ'){
+            if(chordString>1){ chordString--; return; }
+            chordString=6;
+            const pool=chordRootPool();
+            if(pool.length){
+                const idx=Math.max(0,pool.indexOf(chordRootNote));
+                chordRootNote=pool[(idx+1)%pool.length];
+            }
+        }
+    }
+    function updateChordControls(){
+        ['MAJ7','MIN7','DOM7'].forEach(q=>document.getElementById(`chord-quality-${q}`)?.classList.toggle('active',chordQuality===q));
+        ['DIRECT','RANDOM','STRING_SEQ','FULL_SEQ'].forEach(p=>document.getElementById(`chord-practice-${p}`)?.classList.toggle('active',chordPractice===p));
+        noteNames.forEach(n=>document.getElementById(`cn-${n.replace('#','s')}`)?.classList.toggle('active',canonicalNote(n)===chordRootNote));
+        for(let i=1;i<=6;i++) document.getElementById(`cs-${i}`)?.classList.toggle('active',i===chordString);
+    }
+    function chordTargetNote(step){
+        const def = chordDefs[chordQuality];
+        return transpose(chordRootNote, def.intervals[step]);
+    }
+
+    // 현재 연습 줄의 코드톤을 찾기 위한 "인접 줄 루트" 패턴.
+    // targetString보다 번호가 큰 줄 = 굵은 쪽, 작은 줄 = 얇은 쪽.
+    // 3↔2번 줄(G↔B) 경계만 표준튜닝 간격이 달라 1프렛 보정한다.
+    function chordAdjacentPattern(degree){
+        const thickCrossGB = chordString === 2; // 3번줄 Root -> 2번줄 target
+        const thinCrossGB  = chordString === 3; // 2번줄 Root -> 3번줄 target
+        const thickOffsets = thickCrossGB
+            ? { 'b3':-1, '3':0, '5':3 }
+            : { 'b3':-2, '3':-1, '5':2 };
+        const thinOffsets = thinCrossGB
+            ? { 'b3':-5, '3':-4, '5':-1 }
+            : { 'b3':-4, '3':-3, '5':0 };
+        return { thick: thickOffsets[degree], thin: thinOffsets[degree] };
+    }
+
+    function signedFret(n){ return n===0 ? '같은 프렛' : `${n>0?'+':''}${n}F`; }
+
+    function chordStepGuide(){
+        const def=chordDefs[chordQuality];
+        if(chordStep===0) return `선택한 ${chordString}번 줄에서 ${noteLabel(chordRootNote)} 루트(1)를 찾으세요.`;
+        const degree=def.degrees[chordStep];
+        if(degree==='3' || degree==='b3' || degree==='5'){
+            const p=chordAdjacentPattern(degree), parts=[];
+            if(chordString<6) parts.push(`굵은 쪽 ${chordString+1}번 줄 Root → ${signedFret(p.thick)} → ${chordString}번 줄`);
+            if(chordString>1) parts.push(`얇은 쪽 ${chordString-1}번 줄 Root → ${signedFret(p.thin)} → ${chordString}번 줄`);
+            const exception=(chordString===2 || chordString===3) ? ' · G↔B 경계 1F 보정 적용' : '';
+            return `${degree}: ${parts.join(' / ')}${exception}. 프렛 범위를 벗어나면 ±12F의 같은 음도 정답입니다.`;
+        }
+        if(degree==='7') return '7: 현재 줄의 Root 바로 왼쪽 -1F. 같은 음인 +11F 위치도 정답입니다.';
+        if(degree==='b7') return 'b7: 현재 줄의 Root에서 -2F. 같은 음인 +10F 위치도 정답입니다.';
+        return '';
+    }
+
+    function updateChordHelp(){
+        const box=document.getElementById('chord-help');
+        if(!box) return;
+        box.innerHTML=`<strong>${chordStepGuide()}</strong><br>정답 판정은 모양이 아니라 실제 음정 기준입니다. 선택한 줄에서 현재 코드톤과 같은 음이면 어느 옥타브 위치든 인정합니다.`;
+    }
+
+    function resetChordNodes(){ document.querySelectorAll('.node').forEach(n=>{n.classList.remove('correct','wrong','root-found','third-found','chord-root','chord-tone');n.innerText='';}); }
+    function newChordQuiz(){
+        resetChordNodes(); chordRootFret=-1; chordStep=0; targetStrNum=chordString; foundCount=0; totalToFind=4;
+        const def=chordDefs[chordQuality];
+        document.getElementById('target-desc').innerText=`${chordString}번 줄 · ${noteLabel(chordRootNote)} ${def.label} 코드톤`;
+        document.getElementById('target-note').innerText=`${noteLabel(chordRootNote)} ${def.label} · 1 찾기`;
+        updateChordStatus(); updateChordHelp(); updateUI();
+    }
+    function checkChord(n){
+        const s=parseInt(n.dataset.s), f=parseInt(n.dataset.f), def=chordDefs[chordQuality];
+        if(s!==chordString) return;
+        if(chordStep===0){
+            if(nodeMatchesNote(n,chordRootNote)){
+                chordRootFret=f; chordStep=1; n.classList.add('chord-root'); n.innerText='1';
+                document.getElementById('target-note').innerText=`${noteLabel(chordRootNote)} ${def.label} · ${def.degrees[1]} 찾기`;
+                updateChordStatus(); updateChordHelp(); updateUI();
+            }else wrongChord(n);
+            return;
+        }
+        const expectedNote=chordTargetNote(chordStep);
+        if(nodeMatchesNote(n,expectedNote)){
+            n.classList.add('chord-tone'); n.innerText=def.degrees[chordStep]; chordStep++;
+            if(chordStep>=4){
+                updateChordStatus();
+                document.getElementById('target-note').innerText=`${noteLabel(chordRootNote)} ${def.label} 완성`;
+                const box=document.getElementById('chord-help'); if(box) box.innerHTML='<strong>완성!</strong> 같은 코드로 다시 시작합니다.';
+                setTimeout(newChordQuiz,900);
+            }else{
+                document.getElementById('target-note').innerText=`${noteLabel(chordRootNote)} ${def.label} · ${def.degrees[chordStep]} 찾기`;
+                updateChordStatus(); updateChordHelp();
+            }
+        }else wrongChord(n);
+    }
+    function wrongChord(n){ n.classList.add('wrong'); n.innerText=n.dataset.n2||n.dataset.n1; setTimeout(()=>{n.classList.remove('wrong'); if(!n.classList.contains('chord-root')&&!n.classList.contains('chord-tone')) n.innerText='';},450); }
+    function updateChordStatus(){
+        const def=chordDefs[chordQuality];
+        const current = chordStep<4 ? def.degrees[chordStep] : '완료';
+        const practiceLabel={DIRECT:'직접 선택',RANDOM:'무작위',STRING_SEQ:'줄 순차',FULL_SEQ:'전체 순차'}[chordPractice]; document.getElementById('status').innerText=`${practiceLabel} · ${def.label} ${def.degrees.join(' ')} · ${chordString}번줄 · ${chordStep}/4 완료 · 현재: ${current}`;
+    }
+
+    function initThirdControls() {
+        const noteBox = document.getElementById('third-note-btns');
+        noteNames.forEach(n => {
+            const b = document.createElement('button');
+            b.className = 'btn third-note-btn';
+            b.id = `third-note-${n.replace('#','s')}`;
+            b.innerText = noteLabel(n);
+            b.onclick = () => selectThirdNote(n);
+            noteBox.appendChild(b);
+        });
+
+        const strBox = document.getElementById('third-str-btns');
+        for(let i=1; i<=6; i++) {
+            const b = document.createElement('button');
+            b.className = 'str-btn active';
+            b.id = `third-sbtn-${i}`;
+            b.innerText = i;
+            b.onclick = () => toggleThirdString(i);
+            strBox.appendChild(b);
+        }
+        updateThirdControls();
+    }
+
+    function setThirdQuality(q) {
+        thirdQuality = q;
+        updateThirdControls();
+        if(currentMode === 'THIRD') newQuiz();
+    }
+
+    function setThirdMode(m) {
+        thirdMode = m;
+        const advanced = document.getElementById('third-advanced');
+        if(advanced && m !== 'RANDOM') advanced.open = true;
+        thirdSeqQueue = [];
+        thirdSeqIndex = 0;
+        updateThirdControls();
+        if(currentMode === 'THIRD') newQuiz();
+    }
+
+    function selectThirdNote(n) {
+        const onCount = thirdSelectedNotes.length;
+        if(thirdSelectedNotes.includes(n) && onCount === 1) return;
+        if(thirdSelectedNotes.includes(n)) {
+            thirdSelectedNotes = thirdSelectedNotes.filter(x => x !== n);
+        } else {
+            thirdSelectedNotes.push(n);
+        }
+        thirdFixedNote = thirdSelectedNotes[0];
+        thirdSeqQueue = [];
+        thirdSeqIndex = 0;
+        updateThirdControls();
+        if(currentMode === 'THIRD') newQuiz();
+    }
+
+    function toggleThirdString(i) {
+        const onCount = thirdActiveStrings.filter(Boolean).length;
+        if(thirdActiveStrings[i-1] && onCount === 1) return;
+        thirdActiveStrings[i-1] = !thirdActiveStrings[i-1];
+        thirdSeqQueue = [];
+        thirdSeqIndex = 0;
+        updateThirdControls();
+        if(currentMode === 'THIRD') newQuiz();
+    }
+
+    function thirdAllStrings(v) {
+        thirdActiveStrings = thirdActiveStrings.map(() => v);
+        if(!thirdActiveStrings.some(Boolean)) thirdActiveStrings[5] = true;
+        thirdSeqQueue = [];
+        thirdSeqIndex = 0;
+        updateThirdControls();
+        if(currentMode === 'THIRD') newQuiz();
+    }
+
+    function updateThirdControls() {
+        ['MAJOR','MINOR'].forEach(q => {
+            const b = document.getElementById(`third-quality-${q}`);
+            if(b) b.classList.toggle('active', thirdQuality === q);
+        });
+        ['RANDOM','FIXED_NOTE','FIXED_STRING','FIXED_BOTH','SEQ'].forEach(m => {
+            const b = document.getElementById(`third-mode-${m}`);
+            if(b) b.classList.toggle('active', thirdMode === m);
+        });
+        noteNames.forEach(n => {
+            const b = document.getElementById(`third-note-${n.replace('#','s')}`);
+            if(b) b.classList.toggle('active', thirdSelectedNotes.includes(n));
+        });
+        for(let i=1; i<=6; i++) {
+            const b = document.getElementById(`third-sbtn-${i}`);
+            if(b) b.classList.toggle('active', thirdActiveStrings[i-1]);
+        }
+    }
+
+    function selectedThirdStrings() {
+        const arr = thirdActiveStrings.map((v,i) => v ? i+1 : null).filter(Boolean);
+        return arr.length ? arr : [6];
+    }
+
+    function selectedThirdNotes() {
+        return Array.from(new Set(getNotePool().map(canonicalNote)));
+    }
+
+    function buildThirdSeqQueue() {
+        const strings = selectedThirdStrings().slice().sort((a,b) => b-a);
+        const notes = selectedThirdNotes();
+        thirdSeqQueue = [];
+        notes.forEach(note => strings.forEach(s => thirdSeqQueue.push({ note, string: s })));
+        thirdSeqIndex = 0;
+    }
+
+    function pickThirdTask() {
+        const strings = selectedThirdStrings();
+        let note;
+        let string;
+
+        if(thirdMode === 'SEQ') {
+            if(thirdSeqQueue.length === 0 || thirdSeqIndex >= thirdSeqQueue.length) buildThirdSeqQueue();
+            const task = thirdSeqQueue[thirdSeqIndex++];
+            return { note: task.note, string: task.string };
+        }
+
+        if(thirdMode === 'FIXED_NOTE' || thirdMode === 'FIXED_BOTH') {
+            const pool = thirdSelectedNotes;
+            note = pool[Math.floor(Math.random() * pool.length)];
+        } else {
+            const pool = selectedThirdNotes();
+            note = pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        string = strings[Math.floor(Math.random() * strings.length)];
+        return { note, string };
+    }
+
+    function getThirdTargets(rootString, rootFret, rootNote) {
+        const semitones = thirdQuality === 'MINOR' ? 3 : 4;
+        const target = transpose(rootNote, semitones);
+        const fretShift = thirdQuality === 'MINOR' ? -1 : 0;
+        const candidates = [];
+
+        function pushTarget(s, f, label) {
+            if(s < 1 || s > 6) return;
+            // 3도 찾기는 루트를 누른 실제 프렛 기준의 공식 위치만 인정한다.
+            // f가 음수라서 +12 해야 하는 먼 옥타브 위치는 이번 연습에서 제외한다.
+            if(f < 0 || f > MAX_FRET) return;
+            const node = getNodeAt(s, f);
+            if(!node || !nodeMatchesNote(node, target)) return;
+            const key = `${s}-${f}`;
+            if(!candidates.some(t => t.key === key)) candidates.push({ s, f, label, key });
+        }
+
+        pushTarget(rootString, rootFret + 4 + fretShift, '같은 줄');
+
+        if(rootString - 1 >= 1) {
+            const thinOffset = (rootString === 3) ? 0 : -1; // 3번줄 → 2번줄 예외
+            pushTarget(rootString - 1, rootFret + thinOffset + fretShift, '한 줄 아래/얇은 쪽');
+        }
+
+        if(rootString + 1 <= 6) {
+            const thickOffset = (rootString === 2) ? -4 : -3; // 2번줄 → 3번줄 예외
+            pushTarget(rootString + 1, rootFret + thickOffset + fretShift, '한 줄 위/두꺼운 쪽');
+        }
+
+        return { target, candidates };
+    }
+
+    function getNodeAt(s, f) {
+        return document.querySelector(`.node[data-s="${s}"][data-f="${f}"]`);
+    }
+
+    function isThirdStringVisible(s) {
+        if(thirdPhase === 'ROOT') return s === thirdRootString;
+        return s === thirdRootString || thirdTargets.some(t => t.s === s);
+    }
+
+    function isThirdNodeDisabled(s, f) {
+        if(f > MAX_FRET) return true;
+        if(thirdPhase === 'ROOT') return s !== thirdRootString;
+        return !(s === thirdRootString || thirdTargets.some(t => t.s === s));
+    }
+
+    function resetNodesForThird() {
+        document.querySelectorAll('.node').forEach(n => {
+            n.classList.remove('correct', 'wrong', 'root-found', 'third-found');
+            n.innerText = "";
+        });
+    }
+
+    function newThirdQuiz() {
+        resetNodesForThird();
+        const task = pickThirdTask();
+        thirdRootNote = canonicalNote(task.note);
+        thirdRootString = task.string;
+        thirdRootFret = -1;
+        thirdTargetNote = transpose(thirdRootNote, thirdQuality === 'MINOR' ? 3 : 4);
+        thirdTargets = [];
+        thirdPhase = 'ROOT';
+        targetStrNum = thirdRootString;
+        foundCount = 0;
+        totalToFind = 1;
+
+        document.getElementById('target-desc').innerHTML = `<span class="third-root-text">1단계</span> · ${thirdRootString}번줄에서 루트음을 직접 찾으세요`;
+        document.getElementById('target-note').innerText = `${thirdRootString}번줄 ${noteLabel(thirdRootNote)}`;
+        updateThirdStatus();
+        updateUI();
+    }
+
+    function checkThird(n) {
+        const f = parseInt(n.dataset.f);
+        const s = parseInt(n.dataset.s);
+        if(f > MAX_FRET || n.classList.contains('third-found')) return;
+
+        if(thirdPhase === 'ROOT') {
+            if(s === thirdRootString && nodeMatchesNote(n, thirdRootNote)) {
+                n.classList.add('root-found');
+                n.innerText = noteLabel(thirdRootNote);
+                thirdRootFret = f;
+
+                const result = getThirdTargets(thirdRootString, thirdRootFret, thirdRootNote);
+                thirdTargetNote = result.target;
+                thirdTargets = result.candidates;
+                thirdPhase = 'THIRDS';
+                foundCount = 0;
+                totalToFind = thirdTargets.length;
+
+                const qualityLabel = thirdQuality === 'MINOR' ? '마이너 3도' : '메이저 3도';
+                document.getElementById('target-desc').innerHTML = `<span class="third-target-text">2단계</span> · ${noteLabel(thirdRootNote)} 기준 ${qualityLabel} ${noteLabel(thirdTargetNote)}를 동일줄/위줄/아래줄 중 잡을 수 있는 공식 위치만 찾으세요`;
+                document.getElementById('target-note').innerText = `${noteLabel(thirdRootNote)} → ${qualityLabel} ${noteLabel(thirdTargetNote)}`;
+                updateThirdStatus();
+                updateUI();
+
+                if(totalToFind === 0) setTimeout(newThirdQuiz, 500);
+            } else {
+                n.classList.add('wrong');
+                n.innerText = n.dataset.n2 || n.dataset.n1;
+                setTimeout(() => { n.classList.remove('wrong'); n.innerText = ""; }, 500);
+            }
+            return;
+        }
+
+        const target = thirdTargets.find(t => t.s === s && t.f === f);
+        if(target) {
+            n.classList.add('third-found');
+            n.innerText = noteLabel(thirdTargetNote);
+            foundCount++;
+            updateThirdStatus();
+            if(foundCount >= totalToFind) {
+                setTimeout(newThirdQuiz, 800);
+            }
+        } else {
+            n.classList.add('wrong');
+            n.innerText = n.dataset.n2 || n.dataset.n1;
+            setTimeout(() => { n.classList.remove('wrong'); n.innerText = ""; }, 500);
+        }
+    }
+
+    function updateThirdStatus() {
+        const modeLabel = {
+            RANDOM: '랜덤',
+            FIXED_NOTE: `정해진 음 ${thirdSelectedNotes.map(noteLabel).join(',')}`,
+            FIXED_STRING: `정해진 줄 ${selectedThirdStrings().join(',')}번`,
+            FIXED_BOTH: `${thirdSelectedNotes.map(noteLabel).join(',')} · ${selectedThirdStrings().join(',')}번줄`,
+            SEQ: `순차 ${thirdSeqIndex}/${thirdSeqQueue.length || '-'}`
+        }[thirdMode];
+
+        const qualityLabel = thirdQuality === 'MINOR' ? '마이너 3도' : '메이저 3도';
+        if(thirdPhase === 'ROOT') {
+            document.getElementById('status').innerText = `${qualityLabel} 찾기 · ${modeLabel} · 루트 찾기`;
+        } else {
+            const labels = thirdTargets.map(t => t.label).join(' / ');
+            document.getElementById('status').innerText = `${qualityLabel} 찾기 · 남은 ${totalToFind - foundCount} · ${labels}`;
+        }
+    }
+
+
+    function pentaTargetKey(t) { return `${t.s}-${t.f}`; }
+
+    function pentaDisplayNote(n) {
+        return noteTypeEnabled.flat && !noteTypeEnabled.sharp && altNames[n] ? altNames[n] : n;
+    }
+
+    function pentaDegreeSteps() {
+        return pentaQuality === 'MAJOR'
+            ? [
+                { degree:'1', label:'루트(1도)', semitones:0 },
+                { degree:'2', label:'2도', semitones:2 },
+                { degree:'3', label:'3도', semitones:4 },
+                { degree:'5', label:'5도', semitones:7 },
+                { degree:'6', label:'6도', semitones:9 }
+            ]
+            : [
+                { degree:'1', label:'루트(1도)', semitones:0 },
+                { degree:'♭3', label:'♭3도', semitones:3 },
+                { degree:'4', label:'4도', semitones:5 },
+                { degree:'5', label:'5도', semitones:7 },
+                { degree:'♭7', label:'♭7도', semitones:10 }
+            ];
+    }
+
+    function currentPentaDegreeStep() {
+        const steps = pentaDegreeSteps();
+        return steps[Math.min(pentaDegreeIndex, steps.length - 1)];
+    }
+
+    function pentaGuidedSequence() {
+        return [...pentaTargets].sort((a, b) => (b.s - a.s) || (a.f - b.f));
+    }
+
+    function currentPentaGuidedTarget() {
+        const sequence = pentaGuidedSequence();
+        return sequence[Math.min(pentaGuidedIndex, Math.max(0, sequence.length - 1))] || null;
+    }
+
+    function pentaDegreeLabel(degree) {
+        return pentaDegreeSteps().find(step => step.degree === degree)?.label || `${degree}도`;
+    }
+
+    function pentaFoundCountOnString(stringNum) {
+        return pentaTargets.filter(t => t.s === stringNum && pentaFoundKeys.has(pentaTargetKey(t))).length;
+    }
+
+    function pentaIntervalName(semitones) {
+        return ({0:'같은 음',2:'온음(2프렛)',3:'단3도(3프렛)',4:'장3도(4프렛)',5:'완전4도(5프렛)',7:'완전5도(7프렛)',9:'장6도(9프렛)',10:'단7도(10프렛)'})[semitones] || `${semitones}프렛`;
+    }
+
+    function isPentaLineMode() {
+        return pentaPractice === 'GUIDED' || pentaPractice === 'STRING' || pentaPractice === 'RANDOM_STRING';
+    }
+
+    function completedPentaStrings() {
+        return isPentaLineMode() ? pentaStringOrder.slice(0, pentaStringIndex) : [];
+    }
+
+    function shuffledPentaStrings() {
+        const order = [6,5,4,3,2,1];
+        for(let i = order.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [order[i], order[j]] = [order[j], order[i]];
+        }
+        return order;
+    }
+
+    function initPentaControls() {
+        const select = document.getElementById('penta-root-select');
+        noteNames.forEach(n => {
+            const option = document.createElement('option');
+            option.value = n;
+            option.textContent = noteLabel(n);
+            select.appendChild(option);
+        });
+        updatePentaControls();
+    }
+
+    function resetPentaHint() {
+        pentaHintVisible = false;
+        document.querySelectorAll('.node.penta-hint-note').forEach(n => n.classList.remove('penta-hint-note'));
+        const box = document.getElementById('penta-hint-box');
+        if(box) { box.classList.remove('show'); box.innerHTML = ''; }
+    }
+
+    function setPentaRoot(root) {
+        pentaRoot = root;
+        pentaPreview = false;
+        resetPentaHint();
+        updatePentaControls();
+        if(currentMode === 'PENTA') newPentaQuiz();
+    }
+
+    function setPentaQuality(q) {
+        pentaQuality = q;
+        pentaPreview = false;
+        resetPentaHint();
+        updatePentaControls();
+        if(currentMode === 'PENTA') newPentaQuiz();
+    }
+
+    function setPentaPractice(practice) {
+        pentaPractice = practice;
+        pentaPreview = false;
+        resetPentaHint();
+        updatePentaControls();
+        if(currentMode === 'PENTA') newPentaQuiz();
+    }
+
+    function togglePentaKeepPrevious() {
+        pentaKeepPrevious = !pentaKeepPrevious;
+        updatePentaControls();
+        renderPentaFoundNodes();
+        updatePentaProgress();
+        updateUI();
+    }
+
+    function setPentaPosition(pos) {
+        pentaPosition = Math.max(1, Math.min(5, pos));
+        pentaPreview = false;
+        resetPentaHint();
+        updatePentaControls();
+        if(currentMode === 'PENTA') newPentaQuiz();
+    }
+
+    function changePentaPosition(delta) {
+        const next = ((pentaPosition - 1 + delta + 5) % 5) + 1;
+        setPentaPosition(next);
+    }
+
+    function restartPentaQuiz() {
+        pentaPreview = false;
+        resetPentaHint();
+        updatePentaControls();
+        newPentaQuiz();
+    }
+
+    function togglePentaPreview() {
+        pentaPreview = !pentaPreview;
+        if(pentaPreview) resetPentaHint();
+        updatePentaControls();
+        if(pentaPreview) {
+            showPentaPreview();
+        } else {
+            renderPentaFoundNodes();
+            updatePentaStatus();
+            updatePentaProgress();
+            updateUI();
+        }
+    }
+
+    function togglePentaHint() {
+        if(pentaPractice !== 'GUIDED' || pentaPreview || pentaComplete) return;
+        pentaHintVisible = !pentaHintVisible;
+        renderPentaFoundNodes();
+        if(pentaHintVisible) applyPentaHint();
+        else {
+            const box = document.getElementById('penta-hint-box');
+            if(box) { box.classList.remove('show'); box.innerHTML = ''; }
+            updateUI();
+        }
+        updatePentaControls();
+    }
+
+    function applyPentaHint() {
+        if(!pentaHintVisible || pentaPractice !== 'GUIDED') return;
+        const target = currentPentaGuidedTarget();
+        if(!target) return;
+        const node = document.querySelector(`.node[data-s="${target.s}"][data-f="${target.f}"]`);
+        if(node) node.classList.add('penta-hint-note');
+
+        const step = pentaDegreeSteps().find(x => x.degree === target.degree);
+        const intervalText = step?.semitones === 0
+            ? `선택한 중심음 ${pentaDisplayNote(pentaRoot)} 자체가 루트입니다.`
+            : `${pentaDegreeLabel(target.degree)}는 루트 ${pentaDisplayNote(pentaRoot)}에서 ${pentaIntervalName(step?.semitones ?? 0)} 위의 ${pentaDisplayNote(target.note)}입니다.`;
+        const openNote = noteNames[stringRoots[target.s - 1]];
+        let fretGuide;
+        if(target.f === 0) {
+            fretGuide = `${target.s}번 줄 개방현이 바로 ${pentaDisplayNote(target.note)}입니다.`;
+        } else if(target.f <= 12) {
+            fretGuide = `${target.s}번 줄 개방음 ${pentaDisplayNote(openNote)}에서 오른쪽으로 ${target.f}프렛 이동하면 ${pentaDisplayNote(target.note)}입니다.`;
+        } else {
+            fretGuide = `12프렛은 같은 개방음 ${pentaDisplayNote(openNote)}이 반복되는 자리입니다. 12프렛에서 다시 오른쪽으로 ${target.f - 12}프렛 이동한 ${target.f}프렛을 찾으세요.`;
+        }
+        const box = document.getElementById('penta-hint-box');
+        if(box) {
+            box.innerHTML = `${intervalText}<br>${fretGuide}<br>현재 목표는 <strong>${target.s}번 줄 ${target.f}프렛</strong>이며 노란 테두리로 표시했습니다.`;
+            box.classList.add('show');
+        }
+        updateUI();
+    }
+
+    function updatePentaControls() {
+        const select = document.getElementById('penta-root-select');
+        if(select) select.value = pentaRoot;
+        const practiceSelect = document.getElementById('penta-practice-select');
+        if(practiceSelect) practiceSelect.value = pentaPractice;
+        document.getElementById('penta-quality-MAJOR')?.classList.toggle('active', pentaQuality === 'MAJOR');
+        document.getElementById('penta-quality-MINOR')?.classList.toggle('active', pentaQuality === 'MINOR');
+        const posLabel = document.getElementById('penta-position-label');
+        if(posLabel) posLabel.textContent = `P${pentaPosition} / 5`;
+        const previewBtn = document.getElementById('penta-preview-btn');
+        if(previewBtn) {
+            previewBtn.classList.toggle('active', pentaPreview);
+            previewBtn.textContent = pentaPreview ? '정답 숨기기' : '정답 보기';
+        }
+        const keepBtn = document.getElementById('penta-keep-btn');
+        if(keepBtn) {
+            keepBtn.classList.toggle('active', pentaKeepPrevious);
+            keepBtn.textContent = `이전 줄 유지 ${pentaKeepPrevious ? 'ON' : 'OFF'}`;
+            keepBtn.style.display = pentaPractice === 'FULL' ? 'none' : '';
+        }
+        const hintBtn = document.getElementById('penta-hint-btn');
+        if(hintBtn) {
+            hintBtn.style.display = pentaPractice === 'GUIDED' ? '' : 'none';
+            hintBtn.classList.toggle('active', pentaHintVisible);
+            hintBtn.textContent = pentaHintVisible ? '힌트 숨기기' : '힌트 표시';
+            hintBtn.disabled = pentaPreview || pentaComplete;
+        }
+        const restartBtn = document.getElementById('penta-restart-btn');
+        if(restartBtn) restartBtn.textContent = pentaComplete ? '완료 · 다시하기' : '처음부터';
+    }
+
+    function pentaDegree(note) {
+        const intervals = pentaQuality === 'MAJOR' ? [0,2,4,7,9] : [0,3,5,7,10];
+        const labels = pentaQuality === 'MAJOR' ? ['1','2','3','5','6'] : ['1','♭3','4','5','♭7'];
+        const d = (noteIndex(note) - noteIndex(pentaRoot) + 12) % 12;
+        return labels[intervals.indexOf(d)] || '';
+    }
+
+    function pentaPairInfo() {
+        return pentaQuality === 'MAJOR'
+            ? { other: transpose(pentaRoot, -3), quality: '마이너' }
+            : { other: transpose(pentaRoot, 3), quality: '메이저' };
+    }
+
+    function buildPentaTargets() {
+        const minorRoot = pentaQuality === 'MINOR' ? pentaRoot : transpose(pentaRoot, -3);
+        const anchor = noteIndex(minorRoot);
+        const pattern = minorBoxPatterns[pentaPosition];
+        const out = [];
+        for(let s = 1; s <= 6; s++) {
+            const pair = pattern[6 - s];
+            pair.forEach(off => {
+                let f = anchor + off;
+                while(f > 24) f -= 12;
+                while(f < 0) f += 12;
+                const note = noteNames[(stringRoots[s - 1] + f) % 12];
+                out.push({ s, f, note, degree: pentaDegree(note) });
+            });
+        }
+        return out;
+    }
+
+    function pentaFretWindow() {
+        if(!pentaTargets.length) return { min: 0, max: 24 };
+        const frets = pentaTargets.map(t => t.f);
+        return { min: Math.min(...frets), max: Math.max(...frets) };
+    }
+
+    function currentPentaTargets() {
+        if(pentaPractice === 'GUIDED') {
+            const target = currentPentaGuidedTarget();
+            return target ? [target] : [];
+        }
+        if(isPentaLineMode()) return pentaTargets.filter(t => t.s === pentaString);
+        return pentaTargets;
+    }
+
+    function remainingPentaTargets() {
+        return currentPentaTargets().filter(t => !pentaFoundKeys.has(pentaTargetKey(t)));
+    }
+
+    function resetPentaNodes() {
+        document.querySelectorAll('.node').forEach(n => {
+            n.classList.remove('correct','wrong','root-found','third-found','penta-found','penta-root','penta-preview-note','penta-clickable','penta-hint-note');
+            n.innerText = '';
+            n.title = '';
+        });
+    }
+
+    function shouldShowPentaFound(t) {
+        if(pentaComplete) return true;
+        if(!isPentaLineMode()) return true;
+        if(pentaKeepPrevious) return true;
+        return t.s === pentaString;
+    }
+
+    function renderPentaFoundNodes() {
+        resetPentaNodes();
+        pentaFoundKeys.forEach(key => {
+            const target = pentaTargets.find(t => pentaTargetKey(t) === key);
+            if(!target || !shouldShowPentaFound(target)) return;
+            const node = document.querySelector(`.node[data-s="${target.s}"][data-f="${target.f}"]`);
+            if(!node) return;
+            node.classList.add('penta-found');
+            if(target.degree === '1') node.classList.add('penta-root');
+            node.innerText = target.degree;
+            node.title = `${target.s}번 줄 · ${target.f}프렛 · ${pentaDisplayNote(target.note)} · ${target.degree}도`;
+        });
+        if(pentaHintVisible) applyPentaHint();
+    }
+
+    function setPentaFeedback(text = '', type = '') {
+        const el = document.getElementById('penta-feedback');
+        if(!el) return;
+        clearTimeout(pentaFeedbackTimer);
+        el.textContent = text;
+        el.className = `penta-feedback${type ? ` ${type}` : ''}`;
+        if(text && !pentaComplete) {
+            pentaFeedbackTimer = setTimeout(() => {
+                el.textContent = '';
+                el.className = 'penta-feedback';
+            }, type === 'wrong' ? 1300 : 950);
+        }
+    }
+
+    function updatePentaProgress() {
+        const box = document.getElementById('penta-progress');
+        if(!box) return;
+        const chips = [];
+        if(pentaPractice === 'GUIDED') {
+            const current = currentPentaGuidedTarget();
+            [6,5,4,3,2,1].forEach(s => {
+                const found = pentaFoundCountOnString(s);
+                const total = pentaTargets.filter(t => t.s === s).length;
+                const state = pentaComplete || (total > 0 && found >= total) ? 'done' : (current?.s === s ? 'current' : '');
+                const count = current?.s === s && !pentaComplete ? ` ${found}/${total}` : '';
+                chips.push(`<span class="penta-step ${state}">${s}번${count}</span>`);
+            });
+        } else if(pentaPractice === 'FULL') {
+            chips.push(`<span class="penta-step ${pentaComplete ? 'done' : 'current'}">전체 ${pentaFoundKeys.size}/12</span>`);
+        } else {
+            pentaStringOrder.forEach((s, idx) => {
+                const state = idx < pentaStringIndex || pentaComplete ? 'done' : (idx === pentaStringIndex ? 'current' : '');
+                chips.push(`<span class="penta-step ${state}">${s}번</span>`);
+            });
+        }
+        box.innerHTML = chips.join('');
+    }
+
+    function updatePentaHelp() {
+        const pair = pentaPairInfo();
+        const degreeText = pentaQuality === 'MAJOR' ? '1 · 2 · 3 · 5 · 6' : '1 · ♭3 · 4 · 5 · ♭7';
+        const modeText = {
+            GUIDED: '6번 줄의 낮은 프렛 음부터 한 음씩 안내합니다. 같은 줄의 두 음을 찾으면 5번 줄로 넘어가고, 1번 줄까지 순서대로 완성합니다. 모르면 [힌트 표시]를 누르세요.',
+            STRING: '6번 줄부터 1번 줄까지 줄별로 두 음을 자유로운 순서로 찾습니다.',
+            RANDOM_STRING: '줄 순서를 섞어 각 줄의 두 음을 독립적으로 떠올립니다.',
+            FULL: '줄과 도수 힌트 없이 현재 포지션의 12개 위치를 한 번에 완성합니다.'
+        }[pentaPractice];
+        document.getElementById('penta-help').innerHTML =
+            `<strong>${pentaDisplayNote(pentaRoot)} ${pentaQuality === 'MAJOR' ? '메이저' : '마이너'} 펜타토닉</strong> · 도수 ${degreeText}<br>` +
+            `나란한조: <strong>${pentaDisplayNote(pair.other)} ${pair.quality} 펜타토닉</strong> — 같은 다섯 음과 같은 지판 모양을 공유합니다.` +
+            `<div class="penta-guide-line">${modeText} [이전 줄 유지]가 ON이면 앞에서 찾은 줄이 지판에 계속 남습니다.</div>` +
+            `<span class="penta-legend"><span><i class="penta-dot root"></i>루트 1도</span><span><i class="penta-dot scale"></i>나머지 스케일 음</span></span>`;
+    }
+
+    function newPentaQuiz() {
+        resetPentaNodes();
+        resetPentaHint();
+        pentaTargets = buildPentaTargets();
+        pentaFoundKeys = new Set();
+        pentaComplete = false;
+        pentaPhase = pentaPractice === 'GUIDED' ? 'GUIDED_STRING' : 'STRING';
+        pentaDegreeIndex = 0;
+        pentaGuidedIndex = 0;
+        pentaStringOrder = pentaPractice === 'RANDOM_STRING' ? shuffledPentaStrings() : [6,5,4,3,2,1];
+        pentaStringIndex = 0;
+        const firstGuided = pentaPractice === 'GUIDED' ? currentPentaGuidedTarget() : null;
+        pentaString = firstGuided?.s || pentaStringOrder[0];
+        pentaStringIndex = Math.max(0, pentaStringOrder.indexOf(pentaString));
+        setPentaFeedback('');
+        updatePentaControls();
+        updatePentaHelp();
+        updatePentaProgress();
+        document.getElementById('target-note').innerText = `${pentaDisplayNote(pentaRoot)} ${pentaQuality === 'MAJOR' ? '메이저' : '마이너'} · P${pentaPosition}`;
+        if(pentaPreview) return showPentaPreview();
+        updatePentaStatus();
+        updateUI();
+        focusPentaWindow();
+    }
+
+    function showPentaPreview() {
+        resetPentaNodes();
+        pentaTargets = buildPentaTargets();
+        pentaTargets.forEach(t => {
+            const node = document.querySelector(`.node[data-s="${t.s}"][data-f="${t.f}"]`);
+            if(!node) return;
+            node.classList.add('penta-preview-note');
+            if(t.degree === '1') node.classList.add('penta-root');
+            node.innerText = t.degree;
+            node.title = `${t.s}번 줄 · ${t.f}프렛 · ${pentaDisplayNote(t.note)} · ${t.degree}도`;
+        });
+        document.getElementById('target-desc').innerText = '정답 보기 · 각 도수와 파란 루트 위치를 확인하세요';
+        document.getElementById('status').innerText = '정답 숨기기를 누르면 현재 진행 상태로 돌아갑니다.';
+        setPentaFeedback('정답을 확인 중입니다. 숨겨도 진행 기록은 유지됩니다.');
+        updatePentaHelp();
+        updatePentaProgress();
+        updateUI();
+        focusPentaWindow();
+    }
+
+    function focusPentaWindow() {
+        // PC 지판은 0~24프렛 전체를 항상 한 화면에 표시하므로 스크롤 이동이 필요 없다.
+    }
+
+    function checkPenta(n) {
+        if(pentaPreview || pentaComplete || isNodeDisabled(n)) return;
+        const s = parseInt(n.dataset.s), f = parseInt(n.dataset.f);
+        const target = currentPentaTargets().find(t => t.s === s && t.f === f);
+        const key = `${s}-${f}`;
+        if(pentaFoundKeys.has(key)) return;
+        if(target) {
+            pentaFoundKeys.add(key);
+            n.classList.remove('penta-clickable','penta-hint-note');
+            n.classList.add('penta-found');
+            if(target.degree === '1') n.classList.add('penta-root');
+            n.innerText = target.degree;
+            n.title = `${s}번 줄 · ${f}프렛 · ${pentaDisplayNote(target.note)} · ${target.degree}도`;
+            setPentaFeedback(`정답 · ${s}번 줄 ${f}프렛 · ${pentaDisplayNote(target.note)} (${pentaDegreeLabel(target.degree)})`, 'correct');
+            advancePentaQuiz();
+        } else {
+            const actual = n.dataset.n2 || n.dataset.n1;
+            n.classList.add('wrong');
+            n.innerText = actual;
+            if(pentaPractice === 'GUIDED') {
+                const wanted = currentPentaGuidedTarget();
+                setPentaFeedback(`현재는 ${wanted?.s || pentaString}번 줄에서 ${wanted ? pentaDegreeLabel(wanted.degree) : '다음 음'} ${wanted ? pentaDisplayNote(wanted.note) : ''}을(를) 찾는 단계입니다. 이 위치는 ${actual}입니다.`, 'wrong');
+            } else {
+                setPentaFeedback(`아님 · ${s}번 줄 ${f}프렛은 ${actual}입니다.`, 'wrong');
+            }
+            setTimeout(() => { n.classList.remove('wrong'); n.innerText = ''; }, 550);
+        }
+    }
+
+    function advancePentaQuiz() {
+        if(remainingPentaTargets().length > 0) {
+            if(pentaHintVisible) applyPentaHint();
+            updatePentaStatus();
+            updatePentaProgress();
+            return;
+        }
+        if(pentaPractice === 'GUIDED') {
+            const sequence = pentaGuidedSequence();
+            const finished = sequence[pentaGuidedIndex];
+            if(pentaGuidedIndex < sequence.length - 1) {
+                pentaGuidedIndex++;
+                const next = sequence[pentaGuidedIndex];
+                pentaString = next.s;
+                pentaStringIndex = Math.max(0, pentaStringOrder.indexOf(pentaString));
+                resetPentaHint();
+                renderPentaFoundNodes();
+                updatePentaStatus();
+                updatePentaProgress();
+                updatePentaControls();
+                updateUI();
+                const moved = finished?.s !== next.s ? `${finished.s}번 줄 완료 · ` : '';
+                setPentaFeedback(`${moved}다음은 ${next.s}번 줄 ${pentaDegreeLabel(next.degree)} ${pentaDisplayNote(next.note)}입니다.`, 'correct');
+                return;
+            }
+        } else if(isPentaLineMode() && pentaStringIndex < pentaStringOrder.length - 1) {
+            pentaStringIndex++;
+            pentaString = pentaStringOrder[pentaStringIndex];
+            renderPentaFoundNodes();
+            updatePentaStatus();
+            updatePentaProgress();
+            updateUI();
+            return;
+        }
+        pentaComplete = true;
+        resetPentaHint();
+        renderPentaFoundNodes();
+        document.getElementById('target-desc').innerText = '완료 · 6번 줄부터 1번 줄까지 완성한 모양을 확인하세요';
+        document.getElementById('status').innerText = '자동으로 초기화하지 않습니다. [완료 · 다시하기]를 눌러 반복하세요.';
+        setPentaFeedback(`완료! ${pentaDisplayNote(pentaRoot)} ${pentaQuality === 'MAJOR' ? '메이저' : '마이너'} 펜타토닉 P${pentaPosition}`, 'correct');
+        updatePentaControls();
+        updatePentaProgress();
+        updateUI();
+    }
+
+    function updatePentaStatus() {
+        const remaining = remainingPentaTargets().length;
+        if(pentaPractice === 'GUIDED') {
+            const target = currentPentaGuidedTarget();
+            if(!target) return;
+            const lineFound = pentaFoundCountOnString(target.s);
+            const lineTotal = pentaTargets.filter(t => t.s === target.s).length;
+            document.getElementById('target-desc').innerText = `${target.s}번 줄에서 ${pentaDegreeLabel(target.degree)}를 찾으세요`;
+            document.getElementById('status').innerText = `찾을 음: ${pentaDisplayNote(target.note)} · ${pentaGuidedIndex + 1}/12 · 현재 줄 ${lineFound}/${lineTotal}${pentaHintVisible ? ' · 힌트 표시 중' : ' · 모르면 힌트 표시'}`;
+        } else if(pentaPractice === 'STRING' || pentaPractice === 'RANDOM_STRING') {
+            const orderText = pentaPractice === 'RANDOM_STRING' ? `랜덤 ${pentaStringIndex + 1}/6` : `${pentaStringIndex + 1}/6`;
+            document.getElementById('target-desc').innerText = `${pentaString}번 줄에서 두 음을 찾으세요`;
+            document.getElementById('status').innerText = `${orderText} · ${pentaString}번 줄 · 남은 ${remaining}`;
+        } else {
+            document.getElementById('target-desc').innerText = `포지션 ${pentaPosition}의 12개 위치를 모두 찾으세요`;
+            document.getElementById('status').innerText = `전체 테스트 · ${pentaFoundKeys.size}/12 · 남은 ${remaining}`;
+        }
+    }
+
+
+    function allStrings(v) { activeMulti = activeMulti.map(()=>v); updateUI(); newQuiz(); }
+
+    init();
+</script>
+</body>
+</html>
