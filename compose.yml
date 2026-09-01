@@ -1,0 +1,12 @@
+services:
+  fret-master:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: fret-master
+
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:3001:80"
