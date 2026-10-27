@@ -1,8 +1,8 @@
 const TONES = {
-  root: 'border-blue-400/35 bg-blue-500/15 text-blue-300',
-  third: 'border-amber-400/35 bg-amber-500/15 text-amber-300',
-  fifth: 'border-green-400/35 bg-green-500/15 text-green-300',
-  seventh: 'border-purple-400/35 bg-purple-500/15 text-purple-300',
+  root: 'border-brand/30 bg-mint text-brand',
+  third: 'border-[#b86e12]/30 bg-[#fbeedd] text-[#8a520c]',
+  fifth: 'border-[#2c6aa6]/30 bg-[#e3eef8] text-[#215283]',
+  seventh: 'border-[#7a3fa8]/30 bg-[#f1e7f8] text-[#5e2f83]',
 };
 
 export default function ChordDegreeProgress({ degrees, step }) {
@@ -12,7 +12,7 @@ export default function ChordDegreeProgress({ degrees, step }) {
         const tone = degree === '1' ? 'root' : degree.includes('3') ? 'third' : degree === '5' ? 'fifth' : 'seventh';
         const done = index < step;
         const current = index === step;
-        return <span key={degree} className={`grid h-8 min-w-8 place-items-center rounded-lg border px-2 text-xs font-black transition-colors ${TONES[tone]} ${!done && !current ? 'opacity-35 saturate-50' : ''} ${current ? 'ring-1 ring-white/45' : ''}`}>{degree}{done ? ' ✓' : current ? ' ●' : ''}</span>;
+        return <span key={degree} className={`grid h-8 min-w-8 place-items-center rounded-full border px-2.5 text-xs font-bold transition-colors ${TONES[tone]} ${!done && !current ? 'opacity-40 saturate-50' : ''} ${current ? 'ring-2 ring-accent' : ''}`}>{degree}{done ? ' ✓' : current ? ' ●' : ''}</span>;
       })}
     </div>
   );

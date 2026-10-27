@@ -18,8 +18,8 @@ export default function DirectPracticeControls({ state }) {
           />
         </Field>
       </div>
-      <div className="rounded-xl border border-sky-400/15 bg-sky-400/[0.06] px-3 py-2 text-xs leading-relaxed text-sky-100">
-        선택한 음 총 {state.noteCount}개 · <span className="font-extrabold text-sky-300">C#과 Db는 별도 음으로 출제</span> · 음 선택을 바꾸면 새 회차 시작
+      <div className="rounded-xl bg-canvas px-4 py-2.5 text-xs leading-relaxed text-ink-soft">
+        선택한 음 총 {state.noteCount}개 · <span className="font-bold text-brand">C#과 Db는 별도 음으로 출제</span> · 음 선택을 바꾸면 새 회차 시작
       </div>
     </div>
   );

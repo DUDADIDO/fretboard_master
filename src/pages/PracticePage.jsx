@@ -96,7 +96,7 @@ export default function PracticePage() {
 
   const target = useMemo(() => mode === 'all' || mode === 'one' || mode === 'multi' || mode === 'sequence' ? noteLabel(base.target, preference) : state.target, [base.target, mode, preference, state.target]);
   const controls = (
-    <section className="control-panel">
+    <section className="control-panel card">
       {mode !== 'direct' && <details className="settings-details"><summary>음 · 줄 · 표시 설정</summary><div className="mt-3 flex flex-wrap items-center justify-between gap-2">
         <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} keepMarks={keepMarks} setKeepMarks={setKeepMarks} />
         <StringSelector mode={mode} oneString={base.oneString} setOneString={base.setOneString} multiStrings={base.multiStrings} setMultiStrings={base.setMultiStrings} />

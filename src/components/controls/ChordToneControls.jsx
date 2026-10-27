@@ -11,10 +11,10 @@ export default function ChordToneControls({ state, preference = 'BOTH' }) {
         <Field label="진행"><Select label="코드톤 진행 방식" value={state.practice} onChange={state.setPractice}><option value="DIRECT">직접 선택</option><option value="RANDOM">무작위 음·줄</option><option value="STRING_SEQ">줄 순차</option><option value="RANDOM_SEQ">랜덤 음 · 6→1</option><option value="FULL_SEQ">전체 순차</option></Select></Field>
       </div>
       <div className="flex flex-wrap gap-3">
-        <Field label="루트">{rootLocked ? <span className="text-sm text-sky-300">{noteLabel(state.root, preference)} · 자동</span> : <Select label="코드톤 루트" value={state.root} onChange={state.setRoot}>{selectableNotes(preference).map((note) => <option key={note} value={note}>{noteLabel(note, preference)}</option>)}</Select>}</Field>
-        <Field label="줄">{stringLocked ? <span className="text-sm text-sky-300">{state.string}번 · 자동</span> : <Select label="코드톤 줄" value={state.string} onChange={(value) => state.setString(Number(value))}>{[6,5,4,3,2,1].map((string) => <option key={string} value={string}>{string}번줄</option>)}</Select>}</Field>
+        <Field label="루트">{rootLocked ? <span className="text-sm font-semibold text-brand">{noteLabel(state.root, preference)} · 자동</span> : <Select label="코드톤 루트" value={state.root} onChange={state.setRoot}>{selectableNotes(preference).map((note) => <option key={note} value={note}>{noteLabel(note, preference)}</option>)}</Select>}</Field>
+        <Field label="줄">{stringLocked ? <span className="text-sm font-semibold text-brand">{state.string}번 · 자동</span> : <Select label="코드톤 줄" value={state.string} onChange={(value) => state.setString(Number(value))}>{[6,5,4,3,2,1].map((string) => <option key={string} value={string}>{string}번줄</option>)}</Select>}</Field>
       </div>
-      <details className="settings-details"><summary>패턴 힌트</summary><p className="mt-2 text-amber-100">{state.hint}</p></details>
+      <details className="settings-details"><summary>패턴 힌트</summary><p className="mt-2 text-ink">{state.hint}</p></details>
     </div>
   );
 }

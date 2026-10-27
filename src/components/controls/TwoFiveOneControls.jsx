@@ -15,11 +15,11 @@ export default function TwoFiveOneControls({ state }) {
       </div>
       <details className="settings-details"><summary>{state.key} 키 코드톤 표</summary>
         <table className="mt-2 w-full text-left text-xs">
-          <thead className="text-slate-500"><tr><th className="py-1">코드</th><th>근음</th><th>3음</th><th>5음</th><th>7음</th></tr></thead>
-          <tbody>{state.progression.map((chord) => <tr key={chord.roman} className={chord.roman === state.chord.roman ? 'text-sky-200' : 'text-slate-300'}><td className="py-1 font-bold">{chord.roman} {chord.symbol}</td>{chord.tones.map((tone) => <td key={tone.degree}>{tone.name} <span className="text-slate-500">({tone.degree})</span></td>)}</tr>)}</tbody>
+          <thead className="text-ink-soft"><tr><th className="py-1">코드</th><th>근음</th><th>3음</th><th>5음</th><th>7음</th></tr></thead>
+          <tbody>{state.progression.map((chord) => <tr key={chord.roman} className={chord.roman === state.chord.roman ? 'font-semibold text-brand' : 'text-ink'}><td className="py-1 font-bold">{chord.roman} {chord.symbol}</td>{chord.tones.map((tone) => <td key={tone.degree}>{tone.name} <span className="text-ink-soft">({tone.degree})</span></td>)}</tr>)}</tbody>
         </table>
       </details>
-      <details className="settings-details"><summary>패턴 힌트</summary><p className="mt-2 text-amber-100">{state.hint}</p></details>
+      <details className="settings-details"><summary>패턴 힌트</summary><p className="mt-2 text-ink">{state.hint}</p></details>
     </div>
   );
 }
