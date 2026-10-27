@@ -37,7 +37,7 @@ export default function TwoFiveOneControls({ state }) {
         <Chip active={false} onClick={() => state.setKeyPool(CHART_KEYS)}>전체</Chip>
       </Field>}
       <div className="flex flex-wrap gap-3">
-        <Field label="코드톤"><Segmented ariaLabel="찾을 코드톤" value={state.toneSet} onChange={state.setToneSet} options={[{ value: 'ALL', label: '1 3 5 7 전체' }, { value: 'GUIDE', label: '가이드톤 3 · 7' }]} /></Field>
+        <Field label="코드톤"><Segmented ariaLabel="찾을 코드톤" value={state.toneSet} onChange={state.setToneSet} options={[{ value: 'ALL', label: '1 3 5 7 전체' }, { value: 'GUIDE', label: '루트 + 가이드톤 3 · 7' }]} /></Field>
         {!state.sweep && <Field label="줄"><Select label="ii-V-I 줄" value={state.string} onChange={(value) => state.setString(Number(value))}><option value={0}>전체 줄</option>{[6, 5, 4, 3, 2, 1].map((string) => <option key={string} value={string}>{string}번줄</option>)}</Select></Field>}
         <Chip active={state.showNames} onClick={() => state.setShowNames(!state.showNames)}>음이름 힌트</Chip>
       </div>

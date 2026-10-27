@@ -78,3 +78,12 @@ export function nextPositionOffset(offset, shiftBy, rangeEnd, maxFret = 24) {
   const next = offset + shiftBy;
   return rangeEnd + next > maxFret ? 0 : next;
 }
+
+// 코드톤은 루트 기준 거리로 찾으므로, 포지션 안의 루트를 먼저(낮은 음부터) 찾고
+// 나머지 3·5·7을 정한 방향으로 훑는다. 루트는 anchor로 표시해 계속 보이게 한다.
+export function getRootFirstSequence(tones, startFret, width, direction) {
+  const rootTone = tones.find((tone) => tone.degree === '1');
+  const roots = rootTone ? getSweepSequence([rootTone], startFret, width, 'UP').map((item) => ({ ...item, anchor: true })) : [];
+  const rest = getSweepSequence(tones.filter((tone) => tone.degree !== '1'), startFret, width, direction);
+  return [...roots, ...rest];
+}

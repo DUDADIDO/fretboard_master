@@ -3,7 +3,7 @@ import { getNoteAtFret } from './fretboard.js';
 import { getChordTones } from './chords.js';
 import { getIntervalPattern } from './intervals.js';
 import { getPentatonicTargets } from './pentatonic.js';
-import { CHART_KEYS, getSweepSequence, getTwoFiveOne, nextPositionOffset } from './twoFiveOne.js';
+import { CHART_KEYS, getRootFirstSequence, getSweepSequence, getTwoFiveOne, nextPositionOffset } from './twoFiveOne.js';
 import { ALL_NOTE_SPELLINGS, canonicalNote, getNotePool, noteLabel, selectableNotes, spellingPreference } from './notes.js';
 
 describe('표준 튜닝과 지판', () => {
@@ -114,5 +114,25 @@ describe('포지션 이동', () => {
     expect(nextPositionOffset(0, 2, 8)).toBe(2);
     expect(nextPositionOffset(14, 2, 8)).toBe(16);
     expect(nextPositionOffset(16, 2, 8)).toBe(0);
+  });
+});
+
+describe('루트 먼저 찾기', () => {
+  const [dm7] = getTwoFiveOne('C');
+
+  it('포지션 안의 루트를 먼저 낮은 음부터, 나머지는 방향대로', () => {
+    const seq = getRootFirstSequence(dm7.tones, 5, 4, 'UP');
+    expect(seq.filter((item) => item.anchor).map((item) => item.key)).toEqual(['5-5', '3-7']);
+    expect(seq.slice(0, 2).every((item) => item.degree === '1')).toBe(true);
+    expect(seq.slice(2).map((item) => `${item.key}:${item.degree}`)).toEqual([
+      '6-5:5', '6-8:b7', '5-8:b3', '4-7:5', '3-5:b7', '2-6:b3', '1-5:5', '1-8:b7',
+    ]);
+  });
+
+  it('가이드톤만 할 때도 루트부터 찾는다', () => {
+    const guide = dm7.tones.filter((tone) => ['1', 'b3', 'b7'].includes(tone.degree));
+    const seq = getRootFirstSequence(guide, 5, 4, 'DOWN');
+    expect(seq[0].degree).toBe('1');
+    expect(seq.slice(2).map((item) => item.key)).toEqual(['1-8', '2-6', '3-5', '5-8', '6-8']);
   });
 });
