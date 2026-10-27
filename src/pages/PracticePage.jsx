@@ -75,7 +75,7 @@ export default function PracticePage() {
     if (mode === 'third') {
       const root = third.rootFret === node.fret && third.task.string === node.string;
       const correct = root || third.found.has(node.key);
-      return { disabled: !third.activeStrings.includes(node.string), wrong, correct, anchor: root, tone: root ? 'tone-root' : 'tone-third', label: wrong ? noteLabel(node.note, spellingPreference(third.task.note, preference)) : root ? '1' : third.found.has(node.key) ? (third.quality === 'MAJOR' ? '3' : 'b3') : '' };
+      return { disabled: !third.activeStrings.includes(node.string), wrong, correct, tone: root ? 'tone-root' : 'tone-third', label: wrong ? noteLabel(node.note, spellingPreference(third.task.note, preference)) : root ? '1' : third.found.has(node.key) ? (third.quality === 'MAJOR' ? '3' : 'b3') : '' };
     }
     if (mode === 'pentatonic') {
       const target = penta.targets.find((item) => item.key === node.key);
@@ -90,20 +90,20 @@ export default function PracticePage() {
       const correct = foundIndex >= 0;
       const degree = correct ? chord.tones[foundIndex]?.degree : '';
       const tone = degree === '1' ? 'tone-root' : degree?.includes('3') ? 'tone-third' : degree === '5' ? 'tone-fifth' : 'tone-seventh';
-      return { disabled: node.string !== chord.string, wrong, correct, anchor: degree === '1', tone, label: wrong ? noteLabel(node.note, spellingPreference(chord.root, preference)) : degree };
+      return { disabled: node.string !== chord.string, wrong, correct, tone, label: wrong ? noteLabel(node.note, spellingPreference(chord.root, preference)) : degree };
     }
     if (mode === 'two-five-one') {
       const hit = twoFive.found.find((item) => item.key === node.key);
       const degree = hit?.degree ?? '';
       const tone = degree === '1' ? 'tone-root' : degree.includes('3') ? 'tone-third' : degree === '5' ? 'tone-fifth' : 'tone-seventh';
-      return { disabled: !twoFive.activeStrings.includes(node.string) || twoFive.complete, wrong, correct: Boolean(hit), anchor: degree === '1', tone, label: wrong ? noteLabel(node.note, spellingPreference(twoFive.key, preference)) : degree };
+      return { disabled: !twoFive.activeStrings.includes(node.string) || twoFive.complete, wrong, correct: Boolean(hit), tone, label: wrong ? noteLabel(node.note, spellingPreference(twoFive.key, preference)) : degree };
     }
     return { disabled: node.fret > BASIC_MAX_FRET || !base.activeStrings.includes(node.string), wrong, correct: base.found.has(node.key), tone: 'tone-note', label: wrong ? noteLabel(node.note, spellingPreference(base.target, preference)) : base.found.has(node.key) ? noteLabel(base.target, preference) : '' };
   }, [base, chord, mode, penta, preference, state.wrongKey, third, twoFive]);
-  // 표시 유지를 끄면 방금 누른 정답만 잠깐 보여주고 이전에 찾은 위치는 숨긴다. 기준이 되는 루트(anchor)는 남긴다.
+  // 표시 유지를 끄면 실제 기타처럼 방금 누른 정답만 잠깐 보여주고 루트를 포함해 이전에 찾은 위치는 모두 숨긴다.
   const getNodeView = useCallback((node) => {
     const view = getModeNodeView(node);
-    const revealed = keepMarks || view.anchor || node.key === flashKey || (mode === 'pentatonic' && penta.preview);
+    const revealed = keepMarks || node.key === flashKey || (mode === 'pentatonic' && penta.preview);
     return view.correct && !revealed ? { ...view, correct: false, label: '' } : view;
   }, [flashKey, getModeNodeView, keepMarks, mode, penta.preview]);
 
