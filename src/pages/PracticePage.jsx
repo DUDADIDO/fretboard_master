@@ -1,9 +1,10 @@
 import { Navigate, useParams } from 'react-router-dom';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { MODES, LEGACY_MODE } from '../constants/modes.js';
 import { createFretboard, BASIC_MAX_FRET } from '../utils/fretboard.js';
 import { noteLabel, spellingPreference } from '../utils/notes.js';
 import { useMediaQuery } from '../hooks/useMediaQuery.js';
+import { useStoredState } from '../hooks/useStoredState.js';
 import { useNotePractice } from '../features/notePractice/useNotePractice.js';
 import { useThirdPractice } from '../features/thirdPractice/useThirdPractice.js';
 import { usePentatonicPractice } from '../features/pentatonic/usePentatonicPractice.js';
@@ -35,6 +36,9 @@ export default function PracticePage() {
   const mode = valid ? routeMode : 'all';
   const isMobile = useMediaQuery('(max-width: 900px)');
   const [showFrets, setShowFrets] = useState(true);
+  const [keepMarks, setKeepMarks] = useStoredState('fretmaster.keepMarks', true);
+  const [flashKey, setFlashKey] = useState(null);
+  const flashTimer = useRef(null);
   const [noteTypes, setNoteTypes] = useState({ natural: true, sharp: false, flat: false });
   const preference = noteTypes.flat && !noteTypes.sharp ? 'FLAT' : noteTypes.sharp && !noteTypes.flat ? 'SHARP' : 'BOTH';
   const base = useNotePractice(LEGACY_MODE[mode] ?? 'ALL', board, noteTypes);
@@ -47,8 +51,13 @@ export default function PracticePage() {
   const state = mode === 'third' ? third : mode === 'pentatonic' ? penta : mode === 'chord-tone' ? chord : mode === 'two-five-one' ? twoFive : mode === 'direct' ? direct : base;
   const modeMeta = MODES.find((item) => item.id === mode);
 
-  const onNodeClick = useCallback((node) => state.click(node), [state]);
-  const getNodeView = useCallback((node) => {
+  const onNodeClick = useCallback((node) => {
+    state.click(node);
+    setFlashKey(node.key);
+    window.clearTimeout(flashTimer.current);
+    flashTimer.current = window.setTimeout(() => setFlashKey(null), 700);
+  }, [state]);
+  const getModeNodeView = useCallback((node) => {
     const wrong = state.wrongKey === node.key;
     if (mode === 'third') {
       const root = third.rootFret === node.fret && third.task.string === node.string;
@@ -78,12 +87,18 @@ export default function PracticePage() {
     }
     return { disabled: node.fret > BASIC_MAX_FRET || !base.activeStrings.includes(node.string), wrong, correct: base.found.has(node.key), tone: 'tone-note', label: wrong ? noteLabel(node.note, spellingPreference(base.target, preference)) : base.found.has(node.key) ? noteLabel(base.target, preference) : '' };
   }, [base, chord, mode, penta, preference, state.wrongKey, third, twoFive]);
+  // 표시 유지를 끄면 방금 누른 정답만 잠깐 보여주고 이전에 찾은 위치는 숨긴다.
+  const getNodeView = useCallback((node) => {
+    const view = getModeNodeView(node);
+    const revealed = keepMarks || node.key === flashKey || (mode === 'pentatonic' && penta.preview);
+    return view.correct && !revealed ? { ...view, correct: false, label: '' } : view;
+  }, [flashKey, getModeNodeView, keepMarks, mode, penta.preview]);
 
   const target = useMemo(() => mode === 'all' || mode === 'one' || mode === 'multi' || mode === 'sequence' ? noteLabel(base.target, preference) : state.target, [base.target, mode, preference, state.target]);
   const controls = (
     <section className="control-panel">
       {mode !== 'direct' && <details className="settings-details"><summary>음 · 줄 · 표시 설정</summary><div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} />
+        <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} keepMarks={keepMarks} setKeepMarks={setKeepMarks} />
         <StringSelector mode={mode} oneString={base.oneString} setOneString={base.setOneString} multiStrings={base.multiStrings} setMultiStrings={base.setMultiStrings} />
       </div></details>}
       {mode === 'direct' && <DirectPracticeControls state={direct} />}
