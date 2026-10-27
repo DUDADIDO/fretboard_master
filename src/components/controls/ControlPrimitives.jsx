@@ -1,3 +1,5 @@
+import Dropdown from './Dropdown.jsx';
+
 export function Segmented({ options, value, onChange, ariaLabel }) {
   return (
     <div className="flex flex-wrap gap-1 rounded-[22px] bg-ceramic p-1" role="group" aria-label={ariaLabel}>
@@ -7,7 +9,7 @@ export function Segmented({ options, value, onChange, ariaLabel }) {
 }
 
 export function Field({ label, children }) {
-  return <div className="flex flex-col items-start gap-2"><span className="text-[13px] font-bold text-ink-soft">{label}</span><div className="flex flex-wrap items-center gap-2">{children}</div></div>;
+  return <div className="flex flex-col items-start gap-2"><span className="text-[13px] font-semibold text-ink-soft">{label}</span><div className="flex flex-wrap items-center gap-2">{children}</div></div>;
 }
 
 export function Chip({ active, onClick, children, disabled }) {
@@ -15,5 +17,5 @@ export function Chip({ active, onClick, children, disabled }) {
 }
 
 export function Select({ value, onChange, children, label, disabled = false }) {
-  return <select aria-label={label} disabled={disabled} value={value} onChange={(event) => onChange(event.target.value)} className="min-h-9 rounded border border-line bg-white px-3 text-[13px] font-semibold text-ink outline-none focus:border-accent disabled:opacity-40">{children}</select>;
+  return <Dropdown label={label} value={value} onChange={onChange} disabled={disabled}>{children}</Dropdown>;
 }
