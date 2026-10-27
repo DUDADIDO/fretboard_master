@@ -53,6 +53,8 @@ export function useTwoFiveOnePractice() {
     setRangeStart(value);
     setRangeEnd((end) => Math.min(24, value + Math.max(1, end - rangeStart)));
   }, [rangeStart]);
+  // 지판에서 경계를 끌어 바꿀 때. 자동 이동으로 옮겨진 위치를 새 기준으로 삼는다.
+  const setRange = useCallback((start, end) => { setOffset(0); setRangeStart(start); setRangeEnd(end); }, []);
   const setSpan = useCallback((span) => setRangeEnd(Math.min(24, rangeStart + span - 1)), [rangeStart]);
   // 출제 키에서 빠진 키에 머물러 있으면 차트 순서상 첫 출제 키로 옮긴다.
   const usesPool = keyOrder !== 'FIXED';
@@ -111,7 +113,7 @@ export function useTwoFiveOnePractice() {
   const ask = sweep ? `${position}–${lastFret}프렛 ${SWEEP_DIRECTIONS[direction]} · 다음 ${current.degree}${name}` : `${where} ${current.degree}${name}를 찾으세요`;
   const hint = sweep ? '포지션 밖으로 손을 옮기지 말고, 정한 방향으로 코드톤을 빠짐없이 순서대로 누르세요.' : complete || rootFret == null || string === 0 ? '루트를 찾은 뒤 같은 줄 기준으로 힌트가 표시됩니다.' : getChordToneHint(rootFret, string, current.degree);
   return {
-    practice, setPractice, sweep, position, lastFret, width, rangeStart, rangeEnd, moveStart, setRangeEnd, setSpan, shift, setShift, shiftBy, setShiftBy, offset,
+    practice, setPractice, sweep, position, lastFret, width, rangeStart, rangeEnd, moveStart, setRangeEnd, setSpan, setRange, shift, setShift, shiftBy, setShiftBy, offset,
     direction, setDirection, inPosition,
     keyOrder, setKeyOrder, key, setKey, string, setString, toneSet, setToneSet, showNames, setShowNames,
     chordFilter, toggleChord, keyPool, setKeyPool, toggleKey, usesPool,

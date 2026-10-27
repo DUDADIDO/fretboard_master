@@ -90,6 +90,16 @@ button { touch-action: manipulation; }
 .fret-slot { position: relative; min-width: 0; border-right: clamp(1px, .15vw, 3px) solid #94a3b8; z-index: 3; }
 .fret-slot.in-position { background: rgba(212,233,226,.16); }
 .fret-slot.in-position .fret-number { color: var(--color-brand); }
+.fretboard-shell.has-position { padding-bottom: 34px; }
+.position-layer { position: absolute; inset: 0; z-index: 12; pointer-events: none; }
+.position-range { position: absolute; top: -6px; bottom: -6px; border: 2px solid rgba(212,233,226,.85); border-radius: 8px; box-shadow: 0 0 0 1px rgba(0,0,0,.25); }
+.position-handle { position: absolute; top: 50%; width: 14px; height: 56px; transform: translate(-50%,-50%); border-radius: 50px; background: #d4e9e2; box-shadow: 0 0 6px rgba(0,0,0,.24), 0 8px 12px rgba(0,0,0,.14); cursor: ew-resize; pointer-events: auto; touch-action: none; transition: transform .2s ease; }
+.position-handle::after { content: ""; position: absolute; inset: 14px 5px; border-inline: 1.5px solid rgba(0,98,65,.55); }
+.position-handle.left { left: -1px; }
+.position-handle.right { left: calc(100% + 1px); }
+.position-handle:hover, .position-handle:focus-visible { transform: translate(-50%,-50%) scaleX(1.15); outline: none; background: #fff; }
+.position-bar { position: absolute; left: 50%; bottom: -26px; transform: translateX(-50%); min-width: 76px; padding: 3px 10px; border-radius: 50px; background: var(--color-accent); color: #fff; font-size: 11px; font-weight: 700; text-align: center; white-space: nowrap; cursor: grab; pointer-events: auto; touch-action: none; box-shadow: 0 0 6px rgba(0,0,0,.24); }
+.position-bar:active { cursor: grabbing; transform: translateX(-50%) scale(.95); }
 .nut-slot { border-right: 4px solid #efe9dc; background: rgba(0,0,0,.25); }
 .fret-number { position: absolute; top: -31px; left: 50%; transform: translateX(-50%); color: rgba(0,0,0,.45); font-size: clamp(8px, .72vw, 11px); font-weight: 700; white-space: nowrap; }
 .inlay { position: absolute; top: 50%; left: 50%; width: clamp(6px, .68vw, 11px); aspect-ratio: 1; transform: translate(-50%,-50%); border-radius: 999px; background: #d7dde5; opacity: .82; box-shadow: 0 0 0 2px rgba(15,23,42,.42), 0 0 7px rgba(226,232,240,.28); }
@@ -140,6 +150,9 @@ button { touch-action: manipulation; }
   .fretboard-shell { min-height: 0; padding: 24px 6px 6px; }
   .fretboard { height: 100%; min-height: 130px; border-block-width: 3px; }
   .fret-number { top: -20px; }
+  .fretboard-shell.has-position { padding-bottom: 26px; }
+  .position-handle { width: 12px; height: 40px; }
+  .position-bar { bottom: -21px; font-size: 9px; padding: 2px 8px; min-width: 60px; }
   .note-node { width: clamp(14px, 2.5vw, 26px); height: clamp(14px, 2.5vw, 26px); font-size: clamp(5px, .9vw, 9px); }
   .inlay.double::before { top: -35px; }.inlay.double::after { bottom: -35px; }
 }

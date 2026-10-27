@@ -125,7 +125,7 @@ export default function PracticePage() {
   const controls = mode === 'pentatonic' ? <section className="control-panel card"><PentatonicActions state={penta} /></section> : null;
   const headerStatus = mode === 'chord-tone' ? <ChordDegreeProgress degrees={chord.tones.map((tone) => tone.degree)} step={chord.step} /> : mode === 'two-five-one' ? <TwoFiveOneProgress progression={twoFive.activeChords} chordIndex={twoFive.chordIndex} degrees={twoFive.tones.map((tone) => tone.degree)} step={twoFive.step} total={twoFive.sweep ? twoFive.tones.length : 0} /> : state.status;
   const header = <QuizHeader eyebrow={isNoteMode ? `${navMode.label} · ${modeMeta.label}` : modeMeta.label} target={target} description={state.description} status={headerStatus} />;
-  const fretboard = mode === 'direct' ? <DirectPracticePanel state={direct} /> : <Fretboard board={board} showFrets={showFrets} activeStrings={state.activeStrings} position={mode === 'two-five-one' && twoFive.sweep ? [twoFive.position, twoFive.lastFret] : null} getNodeView={getNodeView} onNodeClick={onNodeClick} />;
+  const fretboard = mode === 'direct' ? <DirectPracticePanel state={direct} /> : <Fretboard board={board} showFrets={showFrets} activeStrings={state.activeStrings} position={mode === 'two-five-one' && twoFive.sweep ? [twoFive.position, twoFive.lastFret] : null} onPositionChange={twoFive.setRange} getNodeView={getNodeView} onNodeClick={onNodeClick} />;
 
   if (!valid) return <Navigate to="/practice/all" replace />;
   const Layout = isMobile ? MobileLayout : DesktopLayout;
