@@ -1,0 +1,12 @@
+import ChordDegreeProgress from './ChordDegreeProgress.jsx';
+
+export default function TwoFiveOneProgress({ progression, chordIndex, degrees, step }) {
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <div className="flex items-center gap-1 text-xs font-black" aria-label={`ii-V-I 진행 ${chordIndex + 1}/3`}>
+        {progression.map((chord, index) => <span key={chord.roman} className={`rounded-md px-1.5 py-0.5 ${index === chordIndex ? 'bg-sky-500 text-slate-950' : index < chordIndex ? 'text-sky-300' : 'text-slate-500'}`}>{chord.symbol}{index < chordIndex ? ' ✓' : ''}</span>)}
+      </div>
+      <ChordDegreeProgress degrees={degrees} step={step} />
+    </div>
+  );
+}

@@ -1,11 +1,11 @@
-import { NOTES, noteLabel } from '../../utils/notes.js';
+import { noteLabel, selectableNotes } from '../../utils/notes.js';
 import { Chip, Field, Segmented, Select } from './ControlPrimitives.jsx';
 
-export default function PentatonicControls({ state }) {
+export default function PentatonicControls({ state, preference = 'BOTH' }) {
   return (
     <div className="control-stack">
       <div className="flex flex-wrap gap-3">
-        <Field label="중심음"><Select label="펜타토닉 중심음" value={state.root} onChange={state.setRoot}>{NOTES.map((note) => <option key={note} value={note}>{noteLabel(note)}</option>)}</Select><Segmented ariaLabel="펜타토닉 종류" value={state.quality} onChange={state.setQuality} options={[{ value: 'MAJOR', label: '메이저' }, { value: 'MINOR', label: '마이너' }]} /></Field>
+        <Field label="중심음"><Select label="펜타토닉 중심음" value={state.root} onChange={state.setRoot}>{selectableNotes(preference).map((note) => <option key={note} value={note}>{noteLabel(note, preference)}</option>)}</Select><Segmented ariaLabel="펜타토닉 종류" value={state.quality} onChange={state.setQuality} options={[{ value: 'MAJOR', label: '메이저' }, { value: 'MINOR', label: '마이너' }]} /></Field>
         <Field label="출제"><Select label="펜타토닉 출제 방식" value={state.practice} onChange={state.setPractice}><option value="GUIDED">초심자 · 6→1</option><option value="STRING">줄별 반복</option><option value="RANDOM_STRING">랜덤 줄</option><option value="FULL">전체 테스트</option></Select></Field>
         <Field label="포지션"><Chip onClick={() => state.setPosition(state.position === 1 ? 5 : state.position - 1)}>←</Chip><span className="min-w-11 text-center text-sm font-black text-white">P{state.position}/5</span><Chip onClick={() => state.setPosition(state.position === 5 ? 1 : state.position + 1)}>→</Chip></Field>
       </div>

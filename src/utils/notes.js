@@ -3,6 +3,7 @@ export const FLAT_NAMES = { 'C#': 'Db', 'D#': 'Eb', 'F#': 'Gb', 'G#': 'Ab', 'A#'
 export const NATURAL_NOTES = NOTES.filter((note) => !note.includes('#'));
 export const SHARP_NOTES = NOTES.filter((note) => note.includes('#'));
 export const FLATS = Object.values(FLAT_NAMES);
+export const ALL_NOTE_SPELLINGS = [...NATURAL_NOTES, ...SHARP_NOTES, ...FLATS];
 
 const FLAT_TO_SHARP = Object.fromEntries(Object.entries(FLAT_NAMES).map(([sharp, flat]) => [flat, sharp]));
 
@@ -25,8 +26,17 @@ export function isSamePitchClass(a, b) {
 export function noteLabel(note, preference = 'BOTH') {
   const sharp = canonicalNote(note);
   if (preference === 'FLAT' && FLAT_NAMES[sharp]) return FLAT_NAMES[sharp];
-  if (preference === 'BOTH' && FLAT_NAMES[sharp]) return `${sharp}/${FLAT_NAMES[sharp]}`;
+  if (preference === 'BOTH') return note;
   return sharp;
+}
+
+export function spellingPreference(note, preference = 'BOTH') {
+  return preference === 'BOTH' ? (FLAT_TO_SHARP[note] ? 'FLAT' : 'SHARP') : preference;
+}
+
+export function selectableNotes(preference = 'BOTH') {
+  if (preference === 'BOTH') return ALL_NOTE_SPELLINGS;
+  return NOTES;
 }
 
 export function getNotePool(types) {

@@ -3,9 +3,11 @@ export const MODES = [
   { id: 'one', label: '한 줄 마스터', short: '1줄' },
   { id: 'multi', label: '다중 줄 연습', short: '다중' },
   { id: 'sequence', label: '6→1→6 순차', short: '순차' },
+  { id: 'direct', label: '기타 직접 연습', short: '직접' },
   { id: 'third', label: '3도 찾기', short: '3도' },
   { id: 'pentatonic', label: '펜타토닉', short: '펜타' },
   { id: 'chord-tone', label: '1줄 코드톤', short: '코드톤' },
+  { id: 'two-five-one', label: 'ii-V-I 코드톤', short: '251' },
 ];
 
 export const LEGACY_MODE = { all: 'ALL', one: 'ONE', multi: 'MULTI', sequence: 'SEQ' };

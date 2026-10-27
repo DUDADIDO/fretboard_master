@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getPentatonicTargets, PENTA_STEPS } from '../../utils/pentatonic.js';
-import { noteLabel, transpose } from '../../utils/notes.js';
+import { noteLabel, spellingPreference, transpose } from '../../utils/notes.js';
 
 const ORDER = [6, 5, 4, 3, 2, 1];
 const shuffled = () => [...ORDER].sort(() => Math.random() - 0.5);
 
-export function usePentatonicPractice() {
+export function usePentatonicPractice(preference = 'BOTH') {
   const [root, setRoot] = useState('E');
   const [quality, setQuality] = useState('MAJOR');
   const [position, setPosition] = useState(1);
@@ -57,13 +57,14 @@ export function usePentatonicPractice() {
     return Number(key.split('-')[0]) === currentString;
   }));
   const activeStrings = preview || practice === 'FULL' ? ORDER : keepPrevious ? [...completedStrings, currentString] : [currentString];
-  const pair = quality === 'MAJOR' ? `${noteLabel(transpose(root, -3))} 마이너` : `${noteLabel(transpose(root, 3))} 메이저`;
+  const derivedPreference = spellingPreference(root, preference);
+  const pair = quality === 'MAJOR' ? `${noteLabel(transpose(root, -3), derivedPreference)} 마이너` : `${noteLabel(transpose(root, 3), derivedPreference)} 메이저`;
   return {
     root, setRoot, quality, setQuality, position, setPosition, practice, setPractice, keepPrevious, setKeepPrevious,
     preview, setPreview, hint, setHint, reset, targets, found: visibleFound, wrongKey, click, complete, currentString, activeStrings,
     wanted, hintKey: hint ? wanted?.key : null,
-    target: `${noteLabel(root)} ${quality === 'MAJOR' ? '메이저' : '마이너'} · P${position}`,
-    description: complete ? '완료 · 전체 모양을 확인하세요' : practice === 'FULL' ? '현재 포지션의 12개 위치를 모두 찾으세요' : `${currentString}번 줄에서 ${practice === 'GUIDED' ? `${wanted?.degree} (${noteLabel(wanted?.note)})` : '두 음'}을 찾으세요`,
+    target: `${noteLabel(root, preference)} ${quality === 'MAJOR' ? '메이저' : '마이너'} · P${position}`,
+    description: complete ? '완료 · 전체 모양을 확인하세요' : practice === 'FULL' ? '현재 포지션의 12개 위치를 모두 찾으세요' : `${currentString}번 줄에서 ${practice === 'GUIDED' ? `${wanted?.degree} (${noteLabel(wanted?.note, derivedPreference)})` : '두 음'}을 찾으세요`,
     status: complete ? '완료 · 다시하기를 눌러 반복하세요' : `${practice === 'GUIDED' ? `${guidedIndex + 1}/12` : `${found.size}/12`} · 나란한조 ${pair}`,
     degrees: PENTA_STEPS[quality].map((item) => item.degree).join(' · '),
   };

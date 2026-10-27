@@ -17,6 +17,8 @@ body {
 button, select { font: inherit; }
 button { touch-action: manipulation; }
 
+.practice-board-area { height: clamp(280px, 48dvh, 480px); flex: none; }
+
 .control-panel {
   display: flex;
   flex-direction: column;
@@ -25,8 +27,6 @@ button { touch-action: manipulation; }
   border-radius: 1rem;
   background: rgba(15,23,42,.72);
   padding: .65rem .8rem;
-  max-height: 34dvh;
-  overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #334155 transparent;
 }
@@ -106,6 +106,7 @@ button { touch-action: manipulation; }
 .note-node.is-hint { border-color: #facc15; background: rgba(250,204,21,.14); opacity: 1; box-shadow: 0 0 0 3px rgba(250,204,21,.18); }
 
 @media (max-width: 900px) and (orientation: landscape) {
+  .practice-board-area { height: clamp(230px, 52dvh, 360px); }
   .control-panel { gap: .35rem; border-radius: .75rem; padding: .4rem .5rem; }
   .control-stack { gap: .35rem; padding-top: .35rem; }
   .fretboard-shell { min-height: 0; border-radius: .75rem; padding: 24px 4px 6px; }
@@ -114,5 +115,9 @@ button { touch-action: manipulation; }
   .note-node { width: clamp(14px, 2.5vw, 26px); height: clamp(14px, 2.5vw, 26px); font-size: clamp(5px, .9vw, 9px); }
   .inlay.double::before { top: -35px; }.inlay.double::after { bottom: -35px; }
 }
-@media (max-width: 900px) and (orientation: portrait) { .rotate-warning { display: flex; } }
+@media (max-width: 900px) and (orientation: portrait) {
+  .rotate-warning { display: flex; }
+  .quiz-header { grid-template-columns: 1fr auto; gap: .5rem; }
+  .quiz-header > :nth-child(2) { display: none; }
+}
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }

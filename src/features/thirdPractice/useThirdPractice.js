@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getThirdTargets } from '../../utils/intervals.js';
-import { canonicalNote, getNotePool, isSamePitchClass, noteLabel, transpose } from '../../utils/notes.js';
+import { getNotePool, isSamePitchClass, noteLabel, spellingPreference, transpose } from '../../utils/notes.js';
 
-export function useThirdPractice(board, noteTypes) {
+export function useThirdPractice(board, noteTypes, preference = 'BOTH') {
   const [quality, setQuality] = useState('MAJOR');
   const [practice, setPractice] = useState('RANDOM');
   const [selectedNotes, setSelectedNotes] = useState(['C']);
@@ -14,7 +14,7 @@ export function useThirdPractice(board, noteTypes) {
   const [found, setFound] = useState(new Set());
   const [wrongKey, setWrongKey] = useState(null);
   const sequenceRef = useRef({ queue: [], index: 0 });
-  const availableNotes = useMemo(() => [...new Set(getNotePool(noteTypes).map(canonicalNote))], [noteTypes]);
+  const availableNotes = useMemo(() => getNotePool(noteTypes), [noteTypes]);
 
   const nextTask = useCallback(() => {
     let notePool = availableNotes;
@@ -55,10 +55,11 @@ export function useThirdPractice(board, noteTypes) {
   }, [found.size, nextTask, phase, targets.length]);
 
   const targetNote = transpose(task.note, quality === 'MINOR' ? 3 : 4);
+  const derivedPreference = spellingPreference(task.note, preference);
   return {
     quality, setQuality, practice, setPractice, selectedNotes, setSelectedNotes, selectedStrings, setSelectedStrings,
     task, phase, rootFret, targets, found, wrongKey, click,
-    target: phase === 'ROOT' ? `${task.string}번 줄 · ${noteLabel(task.note)}` : `${noteLabel(task.note)} → ${noteLabel(targetNote)}`,
+    target: phase === 'ROOT' ? `${task.string}번 줄 · ${noteLabel(task.note, preference)}` : `${noteLabel(task.note, preference)} → ${noteLabel(targetNote, derivedPreference)}`,
     description: phase === 'ROOT' ? '1단계 · 지정된 줄에서 루트를 찾으세요' : '2단계 · 같은 줄과 양쪽 인접 줄의 공식 3도 위치를 찾으세요',
     status: phase === 'ROOT' ? `${quality === 'MAJOR' ? '메이저' : '마이너'} 3도 · 루트 찾기` : `남은 ${targets.length - found.size} · ${targets.map((item) => item.label).join(' / ')}`,
     activeStrings: phase === 'ROOT' ? [task.string] : [...new Set([task.string, ...targets.map((item) => item.string)])],

@@ -1,6 +1,6 @@
 export default function QuizHeader({ eyebrow, target, description, status }) {
   return (
-    <header className="grid min-h-[108px] grid-cols-[1fr_auto_1fr] items-center rounded-2xl border border-white/8 bg-slate-900/75 px-5 py-3 shadow-xl shadow-black/10 max-lg:min-h-[64px] max-lg:px-3 max-lg:py-1.5">
+    <header className="quiz-header grid min-h-[108px] grid-cols-[1fr_auto_1fr] items-center rounded-2xl border border-white/8 bg-slate-900/75 px-5 py-3 shadow-xl shadow-black/10 max-lg:min-h-[64px] max-lg:px-3 max-lg:py-1.5">
       <div className="min-w-0">
         <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-sky-400">{eyebrow}</p>
         <p className="mt-1 truncate text-sm text-slate-400 max-lg:text-xs">{description}</p>
