@@ -7,13 +7,10 @@ export default function TwoFiveOneControls({ state }) {
     <div className="control-stack">
       <Field label="연습 방식"><Segmented ariaLabel="ii-V-I 연습 방식" value={state.practice} onChange={state.setPractice} options={[{ value: 'SWEEP', label: '포지션 훑기' }, { value: 'STRING', label: '한 줄 1·3·5·7' }]} /></Field>
       {state.sweep && <div className="flex flex-wrap gap-3">
-        <Field label="포지션 · 한 손에 잡히는 범위">
-          <Select label="포지션 시작 프렛" value={state.rangeStart} onChange={(value) => state.moveStart(Number(value))}>{Array.from({ length: 24 }, (_, fret) => <option key={fret} value={fret}>{fret}프렛</option>)}</Select>
-          <span className="text-[13px] text-ink-soft">부터</span>
-          <Select label="포지션 끝 프렛" value={state.rangeEnd} onChange={(value) => state.setRangeEnd(Number(value))}>{Array.from({ length: Math.min(24, state.rangeStart + 12) - state.rangeStart }, (_, index) => state.rangeStart + index + 1).map((fret) => <option key={fret} value={fret}>{fret}프렛</option>)}</Select>
-          <span className="text-[13px] text-ink-soft">까지</span>
-          <p className="w-full text-xs text-ink-soft">지판에서 범위 양쪽 손잡이를 끌어 늘리고 줄이거나, 아래 초록 막대를 끌어 옮길 수도 있어요.</p>
-          <div className="flex gap-1">{[4, 5, 6].map((span) => <Chip key={span} active={state.rangeEnd - state.rangeStart + 1 === span} onClick={() => state.setSpan(span)}>{span}칸</Chip>)}</div>
+        <Field label="시작 위치 · 손 폭">
+          <Select label="시작 프렛" value={state.rangeStart} onChange={(value) => state.moveStart(Number(value))}>{Array.from({ length: 22 }, (_, fret) => <option key={fret} value={fret}>{fret}프렛 근처 루트</option>)}</Select>
+          <div className="flex gap-1">{[4, 5, 6].map((span) => <Chip key={span} active={state.width === span} onClick={() => state.setSpan(span)}>손 {span}칸</Chip>)}</div>
+          <p className="w-full text-xs leading-relaxed text-ink-soft">루트에서 시작해 1→3→5→7→1… 순서로 이어 가요. 다음 음이 손가락 {state.width}칸 안에 없으면 손이 진행 방향으로 조금씩 옮겨 가요. 지판의 손 위치 표시를 끌어서 시작 위치를 바꿀 수도 있어요.</p>
         </Field>
         <Field label="포지션 이동">
           <Segmented ariaLabel="포지션 자동 이동" value={state.shift} onChange={state.setShift} options={Object.entries(POSITION_SHIFTS).map(([value, label]) => ({ value, label }))} />

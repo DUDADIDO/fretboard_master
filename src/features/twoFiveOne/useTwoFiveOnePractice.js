@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getChordToneHint } from '../../utils/chords.js';
 import { isSamePitchClass } from '../../utils/notes.js';
-import { CHART_KEYS, getRootFirstSequence, getTwoFiveOne, GUIDE_DEGREES, nextPositionOffset, SWEEP_DIRECTIONS } from '../../utils/twoFiveOne.js';
+import { CHART_KEYS, getHandPath, getTwoFiveOne, GUIDE_DEGREES, nextPositionOffset, SWEEP_DIRECTIONS } from '../../utils/twoFiveOne.js';
 
 const ALL_STRINGS = [1, 2, 3, 4, 5, 6];
 export const CHORD_ROMANS = ['ii', 'V', 'I'];
@@ -36,15 +36,15 @@ export function useTwoFiveOnePractice() {
   const chord = activeChords[Math.min(chordIndex, lastIndex)];
   // 가이드톤만 연습해도 기준이 되는 루트는 항상 포함한다.
   const chordTones = useMemo(() => toneSet === 'GUIDE' ? chord.tones.filter((tone) => tone.degree === '1' || GUIDE_DEGREES.includes(tone.degree)) : chord.tones, [chord, toneSet]);
-  // 포지션 훑기: 범위 안의 루트를 먼저 모두 찾고, 그 루트 기준으로 나머지 코드톤을 6번줄↔1번줄 음높이 순서로 훑는다.
+  // 포지션 훑기: 시작 위치 근처 루트에서 출발해 1→3→5→7→1… 음높이 순서로 이어 간다.
+  // 손(width칸)에 다음 음이 없으면 진행 방향으로 조금씩 옮겨 간다.
   const sweep = practice === 'SWEEP';
   const position = rangeStart + offset;
   const lastFret = rangeEnd + offset;
   const width = lastFret - position + 1;
-  const tones = useMemo(() => sweep ? getRootFirstSequence(chordTones, position, width, direction) : chordTones, [chordTones, direction, position, sweep, width]);
-  const rootCount = sweep ? tones.filter((item) => item.anchor).length : 0;
+  const tones = useMemo(() => sweep ? getHandPath(chordTones, position, width, direction) : chordTones, [chordTones, direction, position, sweep, width]);
   const activeStrings = sweep || string === 0 ? ALL_STRINGS : [string];
-  const inPosition = useCallback((node) => !sweep || (node.fret >= position && node.fret <= lastFret), [lastFret, position, sweep]);
+  const hand = sweep ? tones[Math.min(step, tones.length - 1)]?.hand ?? [position, lastFret] : null;
 
   const resetChord = useCallback(() => { setStep(0); setRootFret(null); setFound([]); setWrongKey(null); }, []);
   const restart = useCallback(() => { setChordIndex(0); resetChord(); }, [resetChord]);
@@ -92,14 +92,9 @@ export function useTwoFiveOnePractice() {
   }, [chordIndex, lastIndex, nextKey, resetChord]);
 
   const click = useCallback((node) => {
-    if (!activeStrings.includes(node.string) || !inPosition(node) || step >= tones.length) return;
+    if (!activeStrings.includes(node.string) || step >= tones.length) return;
     if (!sweep && found.some((item) => item.key === node.key)) return;
-    // 루트 찾기 단계에서는 포지션 안의 루트를 아무 순서로 눌러도 된다.
-    const rootPhase = sweep && step < rootCount;
-    if (rootPhase && found.some((item) => item.key === node.key)) return;
-    const expected = rootPhase
-      ? tones.slice(0, rootCount).find((item) => item.key === node.key && !found.some((done) => done.key === item.key)) ?? tones[step]
-      : tones[step];
+    const expected = tones[step];
     // 훑기는 순서가 핵심이라 같은 음이라도 다음 차례 위치가 아니면 틀린 것으로 본다.
     if (sweep ? node.key !== expected.key : !isSamePitchClass(node.note, expected.note)) {
       setWrongKey(node.key); window.setTimeout(() => setWrongKey((value) => value === node.key ? null : value), 500); return;
@@ -107,24 +102,23 @@ export function useTwoFiveOnePractice() {
     if (expected.degree === '1') setRootFret(node.fret);
     const entry = { key: node.key, degree: expected.degree, anchor: expected.degree === '1' };
     // 왕복에서 내려오기 시작하면 올라갈 때 표시를 지우고 새로 칠한다. 기준인 루트는 남긴다.
-    const turning = sweep && !rootPhase && expected.pass === 1 && tones[step - 1]?.pass === 0;
+    const turning = sweep && expected.pass === 1 && tones[step - 1]?.pass === 0;
     setFound((previous) => turning ? [...previous.filter((item) => item.anchor), entry] : [...previous, entry]);
     setStep(step + 1);
     if (step === tones.length - 1) window.setTimeout(advanceChord, 850);
-  }, [activeStrings, advanceChord, found, inPosition, rootCount, step, sweep, tones]);
+  }, [activeStrings, advanceChord, found, step, sweep, tones]);
 
   const complete = step >= tones.length;
   const current = tones[Math.min(step, tones.length - 1)];
   const where = string === 0 ? '아무 줄에서' : `${string}번 줄에서`;
   const name = showNames ? ` (${current.name})` : '';
-  const rootsLeft = rootCount - Math.min(step, rootCount);
   const ask = !sweep ? `${where} ${current.degree}${name}를 찾으세요`
-    : rootsLeft > 0 ? `먼저 ${position}–${lastFret}프렛 안의 루트 1${name}를 모두 찾으세요 · 남은 ${rootsLeft}개`
-      : `루트 기준으로 ${SWEEP_DIRECTIONS[direction]} · 다음 ${current.degree}${name}`;
-  const hint = sweep ? '포지션 안의 루트를 먼저 찾고, 루트에서 떨어진 거리로 3·5·7을 찾아 정한 방향대로 빠짐없이 누르세요.' : complete || rootFret == null || string === 0 ? '루트를 찾은 뒤 같은 줄 기준으로 힌트가 표시됩니다.' : getChordToneHint(rootFret, string, current.degree);
+    : step === 0 ? `${SWEEP_DIRECTIONS[direction]} · ${direction === 'DOWN' ? '1·2' : '6·5'}번줄 ${position}프렛 근처 루트 1${name}에서 시작`
+      : `${SWEEP_DIRECTIONS[direction]} · 손 ${hand[0]}–${hand[1]}프렛 · 다음 ${current.degree}${name}`;
+  const hint = sweep ? '루트에서 시작해 1→3→5→7→1… 순서로 이어 가세요. 손가락 4개 안에 다음 음이 없으면 손을 진행 방향으로 조금씩 옮겨요.' : complete || rootFret == null || string === 0 ? '루트를 찾은 뒤 같은 줄 기준으로 힌트가 표시됩니다.' : getChordToneHint(rootFret, string, current.degree);
   return {
     practice, setPractice, sweep, position, lastFret, width, rangeStart, rangeEnd, moveStart, setRangeEnd, setSpan, setRange, shift, setShift, shiftBy, setShiftBy, offset,
-    direction, setDirection, inPosition,
+    direction, setDirection, hand,
     keyOrder, setKeyOrder, key, setKey, string, setString, toneSet, setToneSet, showNames, setShowNames,
     chordFilter, toggleChord, keyPool, setKeyPool, toggleKey, usesPool,
     progression, activeChords, chord, chordIndex, tones, step, found, wrongKey, click, activeStrings, complete, hint,

@@ -3,7 +3,7 @@ import { getNoteAtFret } from './fretboard.js';
 import { getChordTones } from './chords.js';
 import { getIntervalPattern } from './intervals.js';
 import { getPentatonicTargets } from './pentatonic.js';
-import { CHART_KEYS, getRootFirstSequence, getSweepSequence, getTwoFiveOne, nextPositionOffset } from './twoFiveOne.js';
+import { CHART_KEYS, getHandPath, getTwoFiveOne, nextPositionOffset } from './twoFiveOne.js';
 import { ALL_NOTE_SPELLINGS, canonicalNote, getNotePool, noteLabel, selectableNotes, spellingPreference } from './notes.js';
 
 describe('표준 튜닝과 지판', () => {
@@ -87,28 +87,6 @@ describe('ii-V-I', () => {
   });
 });
 
-describe('ii-V-I 포지션 훑기', () => {
-  const [dm7] = getTwoFiveOne('C');
-
-  it('5–8프렛 Dm7 코드톤을 6번줄부터 음높이 순서로 훑는다', () => {
-    const seq = getSweepSequence(dm7.tones, 5, 4, 'UP');
-    expect(seq.map((item) => `${item.string}-${item.fret}:${item.degree}`)).toEqual([
-      '6-5:5', '6-8:b7', '5-5:1', '5-8:b3', '4-7:5', '3-5:b7', '3-7:1', '2-6:b3', '1-5:5', '1-8:b7',
-    ]);
-    expect(seq.every((item) => item.fret >= 5 && item.fret <= 8)).toBe(true);
-  });
-
-  it('하행은 상행의 역순, 왕복은 맨 위 음을 한 번만 친다', () => {
-    const up = getSweepSequence(dm7.tones, 5, 4, 'UP');
-    expect(getSweepSequence(dm7.tones, 5, 4, 'DOWN').map((item) => item.key)).toEqual([...up].reverse().map((item) => item.key));
-    const round = getSweepSequence(dm7.tones, 5, 4, 'UPDOWN');
-    expect(round).toHaveLength(up.length * 2 - 1);
-    expect(round[up.length - 1].key).toBe('1-8');
-    expect(round[up.length].key).toBe('1-5');
-    expect(round.at(-1).key).toBe('6-5');
-  });
-});
-
 describe('포지션 이동', () => {
   it('정한 칸만큼 올리고 24프렛을 넘으면 처음 위치로 돌아온다', () => {
     expect(nextPositionOffset(0, 2, 8)).toBe(2);
@@ -117,22 +95,43 @@ describe('포지션 이동', () => {
   });
 });
 
-describe('루트 먼저 찾기', () => {
-  const [dm7] = getTwoFiveOne('C');
+describe('루트에서 이어 가는 손 경로', () => {
+  const order = { MIN7: ['1', 'b3', '5', 'b7'], DOM7: ['1', '3', '5', 'b7'], MAJ7: ['1', '3', '5', '7'] };
+  const pitch = (item) => [null, 24, 19, 15, 10, 5, 0][item.string] + item.fret;
 
-  it('포지션 안의 루트를 먼저 낮은 음부터, 나머지는 방향대로', () => {
-    const seq = getRootFirstSequence(dm7.tones, 5, 4, 'UP');
-    expect(seq.filter((item) => item.anchor).map((item) => item.key)).toEqual(['5-5', '3-7']);
-    expect(seq.slice(0, 2).every((item) => item.degree === '1')).toBe(true);
-    expect(seq.slice(2).map((item) => `${item.key}:${item.degree}`)).toEqual([
-      '6-5:5', '6-8:b7', '5-8:b3', '4-7:5', '3-5:b7', '2-6:b3', '1-5:5', '1-8:b7',
-    ]);
+  it.each(CHART_KEYS.flatMap((key) => getTwoFiveOne(key).map((chord) => [key, chord])))('%s %o: 루트 시작, 1357 순환, 손은 오른쪽으로만', (key, chord) => {
+    for (const start of [1, 5, 9]) {
+      const path = getHandPath(chord.tones, start, 4, 'UP');
+      expect(path[0].degree).toBe('1');
+      expect([6, 5]).toContain(path[0].string);
+      const degrees = order[chord.quality];
+      path.forEach((item, index) => {
+        expect(item.degree).toBe(degrees[index % 4]);
+        expect(item.fret).toBeGreaterThanOrEqual(item.hand[0]);
+        expect(item.fret).toBeLessThanOrEqual(item.hand[1]);
+        if (index) {
+          expect(pitch(item)).toBeGreaterThan(pitch(path[index - 1]));
+          expect(item.hand[0]).toBeGreaterThanOrEqual(path[index - 1].hand[0]);
+        }
+      });
+      expect(path.at(-1).string).toBeLessThanOrEqual(2);
+    }
   });
 
-  it('가이드톤만 할 때도 루트부터 찾는다', () => {
-    const guide = dm7.tones.filter((tone) => ['1', 'b3', 'b7'].includes(tone.degree));
-    const seq = getRootFirstSequence(guide, 5, 4, 'DOWN');
-    expect(seq[0].degree).toBe('1');
-    expect(seq.slice(2).map((item) => item.key)).toEqual(['1-8', '2-6', '3-5', '5-8', '6-8']);
+  it('C키 G7을 5프렛 근처에서 시작하면 손이 점점 높은 프렛으로 간다', () => {
+    const path = getHandPath(getTwoFiveOne('C')[1].tones, 5, 4, 'UP');
+    expect(path[0]).toMatchObject({ string: 6, fret: 3, degree: '1' });
+    expect(path.at(-1).hand[0]).toBeGreaterThan(path[0].hand[0]);
+  });
+
+  it('하행은 1·2번줄 루트에서 내려가고, 왕복은 같은 길로 루트까지 돌아온다', () => {
+    const dm7 = getTwoFiveOne('C')[0].tones;
+    const down = getHandPath(dm7, 10, 4, 'DOWN');
+    expect(down[0]).toMatchObject({ string: 1, degree: '1' });
+    expect(down.map((item) => item.degree).slice(0, 5)).toEqual(['1', 'b7', '5', 'b3', '1']);
+    const up = getHandPath(dm7, 10, 4, 'UP');
+    const round = getHandPath(dm7, 10, 4, 'UPDOWN');
+    expect(round).toHaveLength(up.length * 2 - 1);
+    expect(round.at(-1).key).toBe(up[0].key);
   });
 });
