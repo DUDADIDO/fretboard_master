@@ -24,7 +24,7 @@ import GlobalControls from '../components/controls/GlobalControls.jsx';
 import StringSelector from '../components/controls/StringSelector.jsx';
 import ThirdControls from '../components/controls/ThirdControls.jsx';
 import PentatonicControls, { PentatonicActions } from '../components/controls/PentatonicControls.jsx';
-import { Field, Segmented } from '../components/controls/ControlPrimitives.jsx';
+import { Field, Section, Segmented } from '../components/controls/ControlPrimitives.jsx';
 import ChordToneControls from '../components/controls/ChordToneControls.jsx';
 import DirectPracticeControls from '../components/controls/DirectPracticeControls.jsx';
 import TwoFiveOneControls from '../components/controls/TwoFiveOneControls.jsx';
@@ -110,18 +110,20 @@ export default function PracticePage() {
   const target = useMemo(() => mode === 'all' || mode === 'one' || mode === 'multi' || mode === 'sequence' ? noteLabel(base.target, preference) : state.target, [base.target, mode, preference, state.target]);
   const settings = (
     <div className="flex flex-col gap-4">
-      <section className="card flex flex-col gap-4 p-4">
-        <h3 className="text-base font-semibold text-ink">{navMode.label}</h3>
-        {isNoteMode && <Field label="범위"><Segmented ariaLabel="음 찾기 범위" value={mode} onChange={(id) => navigate(`/practice/${id}`)} options={NOTE_MODES.map((id) => ({ value: id, label: MODES.find((item) => item.id === id).label }))} /></Field>}
-        {isNoteMode && <StringSelector mode={mode} oneString={base.oneString} setOneString={base.setOneString} multiStrings={base.multiStrings} setMultiStrings={base.setMultiStrings} />}
+      <section className="card flex flex-col gap-4 p-5">
+        <h3 className="text-lg font-bold text-ink">{navMode.label}</h3>
+        {isNoteMode && <div className="control-stack"><Section title="연습 범위">
+          <Field label="범위"><Segmented ariaLabel="음 찾기 범위" value={mode} onChange={(id) => navigate(`/practice/${id}`)} options={NOTE_MODES.map((id) => ({ value: id, label: MODES.find((item) => item.id === id).label }))} /></Field>
+          <StringSelector mode={mode} oneString={base.oneString} setOneString={base.setOneString} multiStrings={base.multiStrings} setMultiStrings={base.setMultiStrings} />
+        </Section></div>}
         {mode === 'direct' && <DirectPracticeControls state={direct} />}
         {mode === 'third' && <ThirdControls state={third} preference={preference} />}
         {mode === 'pentatonic' && <PentatonicControls state={penta} preference={preference} />}
         {mode === 'chord-tone' && <ChordToneControls state={chord} preference={preference} />}
         {mode === 'two-five-one' && <TwoFiveOneControls state={twoFive} />}
       </section>
-      {mode !== 'direct' && <section className="card flex flex-col gap-4 p-4">
-        <h3 className="text-base font-semibold text-ink">음 · 화면 표시</h3>
+      {mode !== 'direct' && <section className="card flex flex-col gap-4 p-5">
+        <h3 className="text-lg font-bold text-ink">공통 설정</h3>
         <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} keepMarks={keepMarks} setKeepMarks={setKeepMarks} soundOn={soundOn} setSoundOn={setSoundOn} />
       </section>}
     </div>

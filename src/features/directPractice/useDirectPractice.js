@@ -13,6 +13,7 @@ export function useDirectPractice() {
       const noteTypes = { ...current.noteTypes, [key]: !current.noteTypes[key] };
       return { ...createSession(current.practice, undefined, 1, getNotePool(noteTypes)), noteTypes };
     }),
+    setNoteTypes: (noteTypes) => setSession((current) => ({ ...createSession(current.practice, undefined, 1, getNotePool(noteTypes)), noteTypes })),
     target: session.queue[session.index],
     next: () => setSession((current) => ({ ...advanceSession(current), noteTypes: current.noteTypes })),
     description: '표시된 음을 실제 기타에서 찾아 연주하세요',

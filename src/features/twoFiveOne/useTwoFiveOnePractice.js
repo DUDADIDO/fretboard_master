@@ -120,7 +120,7 @@ export function useTwoFiveOnePractice() {
     practice, setPractice, sweep, position, lastFret, width, rangeStart, rangeEnd, moveStart, setRangeEnd, setSpan, setRange, shift, setShift, shiftBy, setShiftBy, offset,
     direction, setDirection, hand,
     keyOrder, setKeyOrder, key, setKey, string, setString, toneSet, setToneSet, showNames, setShowNames,
-    chordFilter, toggleChord, keyPool, setKeyPool, toggleKey, usesPool,
+    chordFilter, setChordFilter, toggleChord, keyPool, setKeyPool, toggleKey, usesPool,
     progression, activeChords, chord, chordIndex, tones, step, found, wrongKey, click, activeStrings, complete, hint,
     target: complete ? `${chord.symbol} ✓` : `${chord.symbol} · ${current.degree}`,
     description: complete ? (chordIndex < lastIndex ? '다음 코드로 넘어갑니다' : '키 완성 · 다음 키를 준비합니다') : `${key} 키 ${chord.roman} · ${ask}`,

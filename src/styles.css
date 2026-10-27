@@ -54,7 +54,7 @@ button { touch-action: manipulation; }
 .practice-board-area { height: clamp(280px, 48dvh, 480px); flex: none; }
 
 .control-panel { display: flex; flex-direction: column; gap: 1rem; padding: 1rem 1.25rem; }
-.control-stack { display: flex; flex-direction: column; gap: .85rem; }
+.control-stack { display: flex; flex-direction: column; gap: 1.25rem; }
 .settings-details { border-radius: 12px; background: var(--color-canvas); padding: .75rem 1rem; color: var(--color-ink-soft); font-size: .8125rem; }
 .settings-details summary { cursor: pointer; font-weight: 700; color: var(--color-ink); }
 
