@@ -66,67 +66,51 @@ export function nextPositionOffset(offset, shiftBy, rangeEnd, maxFret = 24) {
 // 개방현 절대 음높이(반음, E2=0 기준). 인덱스 = 줄 번호
 const OPEN_PITCH = [null, 24, 19, 15, 10, 5, 0];
 
-// 루트에서 출발해 1→3→5→7→1… 음높이 순서로 이어 가는 손 경로.
-// 손(손가락 4개)은 span칸을 덮고, 다음 음이 손 안에 없으면 진행 방향으로만 조금씩 옮겨 간다.
-// direction: 'UP'(6→1, 손이 높은 프렛으로), 'DOWN'(1→6, 손이 낮은 프렛으로), 'UPDOWN'(올라갔다 같은 길로 루트까지)
-export function getHandPath(tones, startFret, span, direction, maxFret = 24) {
+// 루트에서 출발해 줄마다 두 음씩 1→3→5→7→1… 음높이 순서로 이어 가는 경로.
+// 상행은 6번줄 루트에서 1번줄까지, 하행은 1번줄 루트에서 6번줄까지. 줄을 넘어갈 때마다 손이 조금씩 옮겨 간다.
+// 예) C키 Dm7, 10프렛: 6줄 10·13 → 5줄 12·15 → 4줄 12·15 → 3줄 14·17 → 2줄 15·18 → 1줄 17·20
+// direction: 'UP'(6→1), 'DOWN'(1→6), 'UPDOWN'(올라갔다 같은 길로 루트까지)
+export const NOTES_PER_STRING = 2;
+
+export function getHandPath(tones, startFret, direction, maxFret = 24) {
   const up = direction !== 'DOWN';
+  const strings = up ? [6, 5, 4, 3, 2, 1] : [1, 2, 3, 4, 5, 6];
+  const step = up ? 1 : -1;
   const pcs = tones.map((tone) => NOTES.indexOf(tone.note));
-  const toneAt = (pitch) => tones[pcs.indexOf((pitch + 4) % 12)]; // E2 = pitch class E(4)
+  const toneAt = (pitch) => tones[pcs.indexOf((((pitch + 4) % 12) + 12) % 12)]; // 기준 E2 = E(4)
   const rootPc = pcs[tones.findIndex((tone) => tone.degree === '1')];
   if (rootPc == null) return [];
 
-  // 시작 루트: 상행은 6·5번줄, 하행은 1·2번줄에서 시작 프렛에 가장 가까운 루트
-  const startStrings = up ? [6, 5] : [1, 2];
-  let start = null;
-  for (const string of startStrings) {
-    for (let fret = 0; fret <= maxFret; fret += 1) {
-      if ((OPEN_PITCH[string] + fret + 4) % 12 !== rootPc) continue;
-      const distance = Math.abs(fret - startFret);
-      if (!start || distance < start.distance) start = { string, fret, distance };
+  const build = (rootFret) => {
+    const path = [];
+    let pitch = OPEN_PITCH[strings[0]] + rootFret;
+    for (const string of strings) {
+      for (let count = 0; count < NOTES_PER_STRING; count += 1) {
+        if (path.length) { pitch += step; while (!toneAt(pitch)) pitch += step; }
+        const fret = pitch - OPEN_PITCH[string];
+        if (fret < 0 || fret > maxFret) return null;
+        path.push({ ...toneAt(pitch), string, fret, key: `${string}-${fret}` });
+      }
     }
+    return path;
+  };
+
+  // 시작 줄에서 시작 프렛에 가장 가까우면서 경로 전체가 지판 안에 들어오는 루트
+  let path = null;
+  let bestDistance = Infinity;
+  for (let fret = 0; fret <= maxFret; fret += 1) {
+    if ((OPEN_PITCH[strings[0]] + fret + 4) % 12 !== rootPc || Math.abs(fret - startFret) >= bestDistance) continue;
+    const candidate = build(fret);
+    if (candidate) { path = candidate; bestDistance = Math.abs(fret - startFret); }
   }
-  if (!start) return [];
+  if (!path) return [];
 
-  const step = up ? 1 : -1;
-  // 상행: 손 왼쪽 끝 = 루트 프렛, 하행: 손 오른쪽 끝 = 루트 프렛
-  let edge = start.fret;
-  const window = () => (up ? [edge, edge + span - 1] : [edge - span + 1, edge]);
-  const inHand = (fret) => fret >= window()[0] && fret <= window()[1];
-  const forward = (fret) => (up ? fret >= window()[0] : fret <= window()[1]);
-  let string = start.string;
-  let pitch = OPEN_PITCH[string] + start.fret;
-  const path = [{ ...toneAt(pitch), string, fret: start.fret, key: `${string}-${start.fret}`, hand: window() }];
-
-  for (;;) {
-    let next = pitch + step;
-    while (!toneAt(next)) next += step;
-    const options = [string, string - step]
-      .filter((item) => item >= 1 && item <= 6)
-      .map((item) => ({ string: item, fret: next - OPEN_PITCH[item] }))
-      .filter((item) => item.fret >= 0 && item.fret <= maxFret && forward(item.fret));
-    // 손 안에 있으면 지금 줄 우선(손 안을 꽉 채움), 없으면 다음 줄
-    const pick = options.find((item) => item.string === string && inHand(item.fret)) ?? options.find((item) => inHand(item.fret));
-    if (pick) {
-      string = pick.string;
-    } else {
-      // 손을 진행 방향으로 최소한만 옮긴다. 마지막 줄에서 손 밖으로 나가면 끝.
-      if (!options.length) break;
-      const best = options.reduce((a, b) => (Math.abs(a.fret - edge) <= Math.abs(b.fret - edge) ? a : b));
-      if (string === (up ? 1 : 6) && best.string === string) break;
-      string = best.string;
-      edge = up ? best.fret - span + 1 : best.fret + span - 1;
-      edge = up ? Math.max(edge, window()[0]) : Math.min(edge, window()[1]);
-      next = OPEN_PITCH[string] + best.fret;
-      pitch = next;
-      path.push({ ...toneAt(pitch), string, fret: best.fret, key: `${string}-${best.fret}`, hand: window() });
-      continue;
-    }
-    pitch = next;
-    path.push({ ...toneAt(pitch), string, fret: pick.fret, key: `${string}-${pick.fret}`, hand: window() });
-  }
-
-  const marked = path.map((item) => ({ ...item, pass: 0, anchor: item.degree === '1' }));
-  if (direction !== 'UPDOWN') return marked;
-  return [...marked, ...[...marked].reverse().slice(1).map((item) => ({ ...item, pass: 1 }))];
+  // 손 위치: 지금 줄에서 치는 두 음을 덮는 범위(최소 4칸)
+  const withHand = path.map((item) => {
+    const frets = path.filter((other) => other.string === item.string).map((other) => other.fret);
+    const low = Math.min(...frets);
+    return { ...item, hand: [low, Math.max(low + 3, ...frets)], pass: 0, anchor: item.degree === '1' };
+  });
+  if (direction !== 'UPDOWN') return withHand;
+  return [...withHand, ...[...withHand].reverse().slice(1).map((item) => ({ ...item, pass: 1 }))];
 }

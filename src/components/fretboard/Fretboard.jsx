@@ -13,7 +13,7 @@ export default function Fretboard({ board, showFrets, activeStrings, position = 
           {[1, 2, 3, 4, 5, 6].map((string) => <span key={string} className={`guitar-string string-${string} ${activeStrings.includes(string) ? '' : 'dimmed'}`} style={{ top: `${(string - 0.5) * (100 / 6)}%` }} />)}
         </div>
         {Array.from({ length: MAX_FRET + 1 }, (_, fret) => <Fret key={fret} fret={fret} inPosition={position != null && fret >= position[0] && fret <= position[1]} nodes={board.filter((node) => node.fret === fret)} showFrets={showFrets} getNodeView={getNodeView} onNodeClick={onNodeClick} />)}
-        {position && onPositionChange && <PositionRange ratios={ratios} start={position[0]} end={position[1]} onChange={onPositionChange} />}
+        {position && onPositionChange && <PositionRange ratios={ratios} start={position[0]} end={position[1]} onChange={onPositionChange} resizable={false} />}
       </div>
     </section>
   );

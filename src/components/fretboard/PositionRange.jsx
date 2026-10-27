@@ -2,7 +2,7 @@ import { useMemo, useRef } from 'react';
 import { MAX_FRET } from '../../utils/fretboard.js';
 
 // 지판 위 포지션 범위. 양쪽 경계를 끌면 범위가 늘고 줄고, 아래 막대를 끌면 범위째 옮겨진다.
-export default function PositionRange({ ratios, start, end, onChange }) {
+export default function PositionRange({ ratios, start, end, onChange, resizable = true }) {
   const layerRef = useRef(null);
   const drag = useRef(null);
   // edges[i] = i번 프렛 칸의 왼쪽 경계(0~1). edges[MAX_FRET + 1] = 1
@@ -54,9 +54,9 @@ export default function PositionRange({ ratios, start, end, onChange }) {
   return (
     <div ref={layerRef} className="position-layer" aria-hidden="false">
       <div className="position-range" style={{ left, width }}>
-        <span className="position-handle left" {...handle('left', '포지션 시작 프렛')} title="끌어서 시작 프렛 조정" />
-        <span className="position-handle right" {...handle('right', '포지션 끝 프렛')} title="끌어서 끝 프렛 조정" />
-        <span className="position-bar" {...handle('move', '포지션 옮기기')} title="끌어서 포지션 옮기기">{start}–{end}프렛 ⇆</span>
+        {resizable && <span className="position-handle left" {...handle('left', '포지션 시작 프렛')} title="끌어서 시작 프렛 조정" />}
+        {resizable && <span className="position-handle right" {...handle('right', '포지션 끝 프렛')} title="끌어서 끝 프렛 조정" />}
+        <span className="position-bar" {...handle('move', '포지션 옮기기')} title="끌어서 포지션 옮기기">손 {start}–{end}프렛 ⇆</span>
       </div>
     </div>
   );
