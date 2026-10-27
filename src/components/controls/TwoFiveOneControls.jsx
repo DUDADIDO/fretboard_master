@@ -1,4 +1,4 @@
-import { CHART_KEYS, SWEEP_DIRECTIONS } from '../../utils/twoFiveOne.js';
+import { CHART_KEYS, POSITION_SHIFTS, SWEEP_DIRECTIONS } from '../../utils/twoFiveOne.js';
 import { CHORD_ROMANS } from '../../features/twoFiveOne/useTwoFiveOnePractice.js';
 import { Chip, Field, Segmented, Select } from './ControlPrimitives.jsx';
 
@@ -7,7 +7,18 @@ export default function TwoFiveOneControls({ state }) {
     <div className="control-stack">
       <Field label="연습 방식"><Segmented ariaLabel="ii-V-I 연습 방식" value={state.practice} onChange={state.setPractice} options={[{ value: 'SWEEP', label: '포지션 훑기' }, { value: 'STRING', label: '한 줄 1·3·5·7' }]} /></Field>
       {state.sweep && <div className="flex flex-wrap gap-3">
-        <Field label="포지션"><Select label="포지션 시작 프렛" value={state.position} onChange={(value) => state.setPosition(Number(value))}>{Array.from({ length: 16 }, (_, fret) => <option key={fret} value={fret}>{fret}–{fret + state.width - 1}프렛</option>)}</Select><Segmented ariaLabel="포지션 폭" value={state.width} onChange={state.setWidth} options={[{ value: 4, label: '4칸' }, { value: 5, label: '5칸 (스트레치)' }]} /></Field>
+        <Field label="포지션 · 한 손에 잡히는 범위">
+          <Select label="포지션 시작 프렛" value={state.rangeStart} onChange={(value) => state.moveStart(Number(value))}>{Array.from({ length: 24 }, (_, fret) => <option key={fret} value={fret}>{fret}프렛</option>)}</Select>
+          <span className="text-[13px] text-ink-soft">부터</span>
+          <Select label="포지션 끝 프렛" value={state.rangeEnd} onChange={(value) => state.setRangeEnd(Number(value))}>{Array.from({ length: Math.min(24, state.rangeStart + 12) - state.rangeStart }, (_, index) => state.rangeStart + index + 1).map((fret) => <option key={fret} value={fret}>{fret}프렛</option>)}</Select>
+          <span className="text-[13px] text-ink-soft">까지</span>
+          <div className="flex gap-1">{[4, 5, 6].map((span) => <Chip key={span} active={state.rangeEnd - state.rangeStart + 1 === span} onClick={() => state.setSpan(span)}>{span}칸</Chip>)}</div>
+        </Field>
+        <Field label="포지션 이동">
+          <Segmented ariaLabel="포지션 자동 이동" value={state.shift} onChange={state.setShift} options={Object.entries(POSITION_SHIFTS).map(([value, label]) => ({ value, label }))} />
+          {state.shift !== 'OFF' && <Select label="이동 칸 수" value={state.shiftBy} onChange={(value) => state.setShiftBy(Number(value))}>{[1, 2, 3, 4, 5].map((step) => <option key={step} value={step}>{step}칸씩</option>)}</Select>}
+          {state.shift !== 'OFF' && <p className="w-full text-xs text-ink-soft">지금 {state.position}–{state.lastFret}프렛 · 24프렛을 넘으면 처음 위치로 돌아와요.</p>}
+        </Field>
         <Field label="방향"><Segmented ariaLabel="훑는 방향" value={state.direction} onChange={state.setDirection} options={Object.entries(SWEEP_DIRECTIONS).map(([value, label]) => ({ value, label }))} /></Field>
       </div>}
       <div className="flex flex-wrap gap-3">

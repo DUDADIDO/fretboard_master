@@ -3,7 +3,7 @@ import { getNoteAtFret } from './fretboard.js';
 import { getChordTones } from './chords.js';
 import { getIntervalPattern } from './intervals.js';
 import { getPentatonicTargets } from './pentatonic.js';
-import { CHART_KEYS, getSweepSequence, getTwoFiveOne } from './twoFiveOne.js';
+import { CHART_KEYS, getSweepSequence, getTwoFiveOne, nextPositionOffset } from './twoFiveOne.js';
 import { ALL_NOTE_SPELLINGS, canonicalNote, getNotePool, noteLabel, selectableNotes, spellingPreference } from './notes.js';
 
 describe('표준 튜닝과 지판', () => {
@@ -106,5 +106,13 @@ describe('ii-V-I 포지션 훑기', () => {
     expect(round[up.length - 1].key).toBe('1-8');
     expect(round[up.length].key).toBe('1-5');
     expect(round.at(-1).key).toBe('6-5');
+  });
+});
+
+describe('포지션 이동', () => {
+  it('정한 칸만큼 올리고 24프렛을 넘으면 처음 위치로 돌아온다', () => {
+    expect(nextPositionOffset(0, 2, 8)).toBe(2);
+    expect(nextPositionOffset(14, 2, 8)).toBe(16);
+    expect(nextPositionOffset(16, 2, 8)).toBe(0);
   });
 });

@@ -70,3 +70,11 @@ export function getSweepSequence(tones, startFret, width, direction) {
   if (direction === 'UPDOWN') return [...up.map((item) => ({ ...item, pass: 0 })), ...down.slice(1).map((item) => ({ ...item, pass: 1 }))];
   return up.map((item) => ({ ...item, pass: 0 }));
 }
+
+export const POSITION_SHIFTS = { OFF: '고정', KEY: '키마다 위로', CYCLE: '한 바퀴 돌면 위로' };
+
+// 포지션을 shiftBy칸 위로 옮긴 오프셋. 범위 끝이 maxFret을 넘으면 처음 위치(오프셋 0)로 돌아온다.
+export function nextPositionOffset(offset, shiftBy, rangeEnd, maxFret = 24) {
+  const next = offset + shiftBy;
+  return rangeEnd + next > maxFret ? 0 : next;
+}

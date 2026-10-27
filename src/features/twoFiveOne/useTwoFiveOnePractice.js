@@ -1,15 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getChordToneHint } from '../../utils/chords.js';
 import { isSamePitchClass } from '../../utils/notes.js';
-import { CHART_KEYS, getSweepSequence, getTwoFiveOne, GUIDE_DEGREES, SWEEP_DIRECTIONS } from '../../utils/twoFiveOne.js';
+import { CHART_KEYS, getSweepSequence, getTwoFiveOne, GUIDE_DEGREES, nextPositionOffset, SWEEP_DIRECTIONS } from '../../utils/twoFiveOne.js';
 
 const ALL_STRINGS = [1, 2, 3, 4, 5, 6];
 export const CHORD_ROMANS = ['ii', 'V', 'I'];
 
 export function useTwoFiveOnePractice() {
   const [practice, setPractice] = useState('SWEEP');
-  const [position, setPosition] = useState(5);
-  const [width, setWidth] = useState(4);
+  // 포지션 = 한 손에 잡히는 프렛 범위. 자동 이동을 켜면 오프셋만큼 위로 옮겨 간다.
+  const [rangeStart, setRangeStart] = useState(5);
+  const [rangeEnd, setRangeEnd] = useState(8);
+  const [shift, setShift] = useState('OFF');
+  const [shiftBy, setShiftBy] = useState(2);
+  const [offset, setOffset] = useState(0);
+  const [keysDone, setKeysDone] = useState(0);
   const [direction, setDirection] = useState('UP');
   const [keyOrder, setKeyOrder] = useState('CHART');
   const [key, setKey] = useState('C');
@@ -32,7 +37,9 @@ export function useTwoFiveOnePractice() {
   const chordTones = useMemo(() => toneSet === 'GUIDE' ? chord.tones.filter((tone) => GUIDE_DEGREES.includes(tone.degree)) : chord.tones, [chord, toneSet]);
   // 포지션 훑기: 정해진 프렛 범위 안의 코드톤을 6번줄↔1번줄 음높이 순서로 전부 친다.
   const sweep = practice === 'SWEEP';
-  const lastFret = position + width - 1;
+  const position = rangeStart + offset;
+  const lastFret = rangeEnd + offset;
+  const width = lastFret - position + 1;
   const tones = useMemo(() => sweep ? getSweepSequence(chordTones, position, width, direction) : chordTones, [chordTones, direction, position, sweep, width]);
   const activeStrings = sweep || string === 0 ? ALL_STRINGS : [string];
   const inPosition = useCallback((node) => !sweep || (node.fret >= position && node.fret <= lastFret), [lastFret, position, sweep]);
@@ -40,6 +47,13 @@ export function useTwoFiveOnePractice() {
   const resetChord = useCallback(() => { setStep(0); setRootFret(null); setFound([]); setWrongKey(null); }, []);
   const restart = useCallback(() => { setChordIndex(0); resetChord(); }, [resetChord]);
   useEffect(restart, [key, string, toneSet, keyOrder, chordFilter, practice, position, width, direction, restart]);
+  useEffect(() => { setOffset(0); setKeysDone(0); }, [rangeStart, rangeEnd, shift, shiftBy, keyOrder, keyPool, practice]);
+  // 시작 프렛을 바꾸면 폭은 유지한다.
+  const moveStart = useCallback((value) => {
+    setRangeStart(value);
+    setRangeEnd((end) => Math.min(24, value + Math.max(1, end - rangeStart)));
+  }, [rangeStart]);
+  const setSpan = useCallback((span) => setRangeEnd(Math.min(24, rangeStart + span - 1)), [rangeStart]);
   // 출제 키에서 빠진 키에 머물러 있으면 차트 순서상 첫 출제 키로 옮긴다.
   const usesPool = keyOrder !== 'FIXED';
   useEffect(() => {
@@ -48,6 +62,10 @@ export function useTwoFiveOnePractice() {
 
   const nextKey = useCallback(() => {
     const pool = CHART_KEYS.filter((item) => keyPool.includes(item));
+    const done = keysDone + 1;
+    setKeysDone(done);
+    const cycleSize = keyOrder === 'FIXED' ? 1 : pool.length;
+    if (sweep && (shift === 'KEY' || (shift === 'CYCLE' && done % cycleSize === 0))) setOffset((value) => nextPositionOffset(value, shiftBy, rangeEnd));
     if (keyOrder === 'FIXED' || pool.length === 1) { restart(); return; }
     if (keyOrder === 'CHART') setKey((value) => {
       const start = CHART_KEYS.indexOf(value);
@@ -57,7 +75,7 @@ export function useTwoFiveOnePractice() {
       const others = pool.filter((item) => item !== value);
       return others[Math.floor(Math.random() * others.length)];
     });
-  }, [keyOrder, keyPool, restart]);
+  }, [keyOrder, keyPool, keysDone, rangeEnd, restart, shift, shiftBy, sweep]);
 
   // 최소 하나는 남겨 둔다.
   const toggleIn = (setter) => (value) => setter((current) => current.includes(value) ? (current.length === 1 ? current : current.filter((item) => item !== value)) : [...current, value]);
@@ -93,7 +111,8 @@ export function useTwoFiveOnePractice() {
   const ask = sweep ? `${position}–${lastFret}프렛 ${SWEEP_DIRECTIONS[direction]} · 다음 ${current.degree}${name}` : `${where} ${current.degree}${name}를 찾으세요`;
   const hint = sweep ? '포지션 밖으로 손을 옮기지 말고, 정한 방향으로 코드톤을 빠짐없이 순서대로 누르세요.' : complete || rootFret == null || string === 0 ? '루트를 찾은 뒤 같은 줄 기준으로 힌트가 표시됩니다.' : getChordToneHint(rootFret, string, current.degree);
   return {
-    practice, setPractice, sweep, position, setPosition, width, setWidth, direction, setDirection, lastFret, inPosition,
+    practice, setPractice, sweep, position, lastFret, width, rangeStart, rangeEnd, moveStart, setRangeEnd, setSpan, shift, setShift, shiftBy, setShiftBy, offset,
+    direction, setDirection, inPosition,
     keyOrder, setKeyOrder, key, setKey, string, setString, toneSet, setToneSet, showNames, setShowNames,
     chordFilter, toggleChord, keyPool, setKeyPool, toggleKey, usesPool,
     progression, activeChords, chord, chordIndex, tones, step, found, wrongKey, click, activeStrings, complete, hint,
