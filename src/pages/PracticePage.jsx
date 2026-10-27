@@ -16,6 +16,7 @@ import MobileLayout from '../components/layout/MobileLayout.jsx';
 import RotateDevice from '../components/layout/RotateDevice.jsx';
 import AppBar from '../components/AppBar.jsx';
 import Overlay from '../components/Overlay.jsx';
+import HelpDialog from '../components/HelpDialog.jsx';
 import QuizHeader from '../components/QuizHeader.jsx';
 import Fretboard from '../components/fretboard/Fretboard.jsx';
 import GlobalControls from '../components/controls/GlobalControls.jsx';
@@ -39,6 +40,8 @@ export default function PracticePage() {
   const navigate = useNavigate();
   const isMobile = useMediaQuery('(max-width: 900px)');
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [seenGuide, setSeenGuide] = useStoredState('fretmaster.seenGuide', false);
+  const [helpOpen, setHelpOpen] = useState(!seenGuide);
   const [showFrets, setShowFrets] = useState(true);
   const [keepMarks, setKeepMarks] = useStoredState('fretmaster.keepMarks', true);
   const [flashKey, setFlashKey] = useState(null);
@@ -128,8 +131,9 @@ export default function PracticePage() {
   const Layout = isMobile ? MobileLayout : DesktopLayout;
   return (
     <>
-      <Layout navigation={<AppBar navMode={navMode} mobile={isMobile} onHelp={() => {}} onSettings={() => setSettingsOpen(true)} />} header={header} controls={controls} board={fretboard} />
+      <Layout navigation={<AppBar navMode={navMode} mobile={isMobile} onHelp={() => setHelpOpen(true)} onSettings={() => setSettingsOpen(true)} />} header={header} controls={controls} board={fretboard} />
       <Overlay open={settingsOpen} onClose={() => setSettingsOpen(false)} title="설정">{settings}</Overlay>
+      <HelpDialog open={helpOpen} navMode={navMode} firstVisit={!seenGuide} onClose={() => { setHelpOpen(false); setSeenGuide(true); }} />
       {mode !== 'direct' && <RotateDevice />}
     </>
   );
