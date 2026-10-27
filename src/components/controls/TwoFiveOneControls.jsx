@@ -9,7 +9,7 @@ export default function TwoFiveOneControls({ state }) {
       {state.sweep && <div className="flex flex-wrap gap-3">
         <Field label="시작 위치">
           <Select label="시작 프렛" value={state.rangeStart} onChange={(value) => state.moveStart(Number(value))}>{Array.from({ length: 23 }, (_, fret) => <option key={fret} value={fret}>{fret}프렛 근처 루트</option>)}</Select>
-          <p className="w-full text-xs leading-relaxed text-ink-soft">{state.direction === 'DOWN' ? '1' : '6'}번줄 루트에서 시작해 줄마다 두 음씩 1→3→5→7→1… 이어 가요. 줄을 넘어갈 때마다 손이 조금씩 옮겨 가요. 지판의 손 위치 표시 아래 막대를 끌어서 시작 위치를 바꿀 수도 있어요.</p>
+          <p className="w-full text-xs leading-relaxed text-ink-soft">코드마다 6번줄 루트에서 시작해 줄마다 두 음씩 1→3→5→7→1… 이어 가요. 줄을 넘어갈 때마다 손이 조금씩 옮겨 가요. 지판의 손 위치 표시 아래 막대를 끌어서 시작 위치를 바꿀 수도 있어요.</p>
         </Field>
         <Field label="포지션 이동">
           <Segmented ariaLabel="포지션 자동 이동" value={state.shift} onChange={state.setShift} options={Object.entries(POSITION_SHIFTS).map(([value, label]) => ({ value, label }))} />

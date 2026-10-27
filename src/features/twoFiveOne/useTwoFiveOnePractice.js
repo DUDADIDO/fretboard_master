@@ -113,7 +113,7 @@ export function useTwoFiveOnePractice() {
   const where = string === 0 ? '아무 줄에서' : `${string}번 줄에서`;
   const name = showNames ? ` (${current.name})` : '';
   const ask = !sweep ? `${where} ${current.degree}${name}를 찾으세요`
-    : step === 0 ? `${SWEEP_DIRECTIONS[direction]} · ${direction === 'DOWN' ? '1' : '6'}번줄 루트 1${name}에서 시작`
+    : step === 0 ? `${SWEEP_DIRECTIONS[direction]} · 6번줄 루트 1${name}에서 시작`
       : `${SWEEP_DIRECTIONS[direction]} · 손 ${hand[0]}–${hand[1]}프렛 · 다음 ${current.degree}${name}`;
   const hint = sweep ? '루트에서 시작해 줄마다 두 음씩 1→3→5→7→1… 이어 가세요. 줄을 넘어갈 때마다 손이 진행 방향으로 조금씩 옮겨 가요.' : complete || rootFret == null || string === 0 ? '루트를 찾은 뒤 같은 줄 기준으로 힌트가 표시됩니다.' : getChordToneHint(rootFret, string, current.degree);
   return {

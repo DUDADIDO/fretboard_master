@@ -123,16 +123,15 @@ describe('루트에서 줄마다 두 음씩 이어 가는 경로', () => {
     }
   });
 
-  it('하행은 1번줄 루트에서 줄마다 두 음씩 내려가고, 왕복은 같은 길로 루트까지 돌아온다', () => {
+  it('왕복은 같은 길로 6번줄 루트까지 돌아온다', () => {
     const dm7 = getTwoFiveOne('C')[0].tones;
-    const down = getHandPath(dm7, 10, 'DOWN');
-    expect(down.slice(0, 4).map((item) => `${item.string}-${item.fret}:${item.degree}`)).toEqual(['1-10:1', '1-8:b7', '2-10:5', '2-6:b3']);
-    expect(down.at(-1).string).toBe(6);
     const up = getHandPath(dm7, 10, 'UP');
     const round = getHandPath(dm7, 10, 'UPDOWN');
     expect(round).toHaveLength(up.length * 2 - 1);
+    expect(round[0]).toMatchObject({ string: 6, degree: '1' });
     expect(round.at(-1).key).toBe('6-10');
   });
+
 });
 
 describe('기타 소리 음높이', () => {

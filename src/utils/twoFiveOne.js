@@ -53,7 +53,8 @@ export function getTwoFiveOne(key) {
   });
 }
 
-export const SWEEP_DIRECTIONS = { UP: '6→1 상행', DOWN: '1→6 하행', UPDOWN: '6→1→6 왕복' };
+// 코드마다 새 포지션이라 항상 6번줄 루트에서 시작한다.
+export const SWEEP_DIRECTIONS = { UP: '6→1 상행', UPDOWN: '6→1→6 왕복' };
 
 export const POSITION_SHIFTS = { OFF: '고정', KEY: '키마다 위로', CYCLE: '한 바퀴 돌면 위로' };
 
@@ -67,15 +68,14 @@ export function nextPositionOffset(offset, shiftBy, rangeEnd, maxFret = 24) {
 const OPEN_PITCH = [null, 24, 19, 15, 10, 5, 0];
 
 // 루트에서 출발해 줄마다 두 음씩 1→3→5→7→1… 음높이 순서로 이어 가는 경로.
-// 상행은 6번줄 루트에서 1번줄까지, 하행은 1번줄 루트에서 6번줄까지. 줄을 넘어갈 때마다 손이 조금씩 옮겨 간다.
+// 6번줄 루트에서 1번줄까지 올라가며 줄을 넘어갈 때마다 손이 조금씩 오른쪽으로 옮겨 간다.
 // 예) C키 Dm7, 10프렛: 6줄 10·13 → 5줄 12·15 → 4줄 12·15 → 3줄 14·17 → 2줄 15·18 → 1줄 17·20
-// direction: 'UP'(6→1), 'DOWN'(1→6), 'UPDOWN'(올라갔다 같은 길로 루트까지)
+// direction: 'UP'(6→1), 'UPDOWN'(올라갔다 같은 길로 6번줄 루트까지)
 export const NOTES_PER_STRING = 2;
 
 export function getHandPath(tones, startFret, direction, maxFret = 24) {
-  const up = direction !== 'DOWN';
-  const strings = up ? [6, 5, 4, 3, 2, 1] : [1, 2, 3, 4, 5, 6];
-  const step = up ? 1 : -1;
+  const strings = [6, 5, 4, 3, 2, 1];
+  const step = 1;
   const pcs = tones.map((tone) => NOTES.indexOf(tone.note));
   const toneAt = (pitch) => tones[pcs.indexOf((((pitch + 4) % 12) + 12) % 12)]; // 기준 E2 = E(4)
   const rootPc = pcs[tones.findIndex((tone) => tone.degree === '1')];
