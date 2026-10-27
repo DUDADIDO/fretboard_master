@@ -9,13 +9,19 @@ export default function PentatonicControls({ state, preference = 'BOTH' }) {
         <Field label="출제"><Select label="펜타토닉 출제 방식" value={state.practice} onChange={state.setPractice}><option value="GUIDED">초심자 · 6→1</option><option value="STRING">줄별 반복</option><option value="RANDOM_STRING">랜덤 줄</option><option value="FULL">전체 테스트</option></Select></Field>
         <Field label="포지션"><Chip onClick={() => state.setPosition(state.position === 1 ? 5 : state.position - 1)}>←</Chip><span className="min-w-11 text-center text-sm font-bold text-ink">P{state.position}/5</span><Chip onClick={() => state.setPosition(state.position === 5 ? 1 : state.position + 1)}>→</Chip></Field>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <Chip active={state.preview} onClick={() => state.setPreview((value) => !value)}>{state.preview ? '정답 숨기기' : '정답 보기'}</Chip>
-        {state.practice !== 'FULL' && <Chip active={state.keepPrevious} onClick={() => state.setKeepPrevious((value) => !value)}>이전 줄 유지 {state.keepPrevious ? 'ON' : 'OFF'}</Chip>}
-        {state.practice === 'GUIDED' && <Chip active={state.hint} disabled={state.preview || state.complete} onClick={() => state.setHint((value) => !value)}>힌트 {state.hint ? '숨기기' : '표시'}</Chip>}
-        <Chip onClick={state.reset}>{state.complete ? '완료 · 다시하기' : '처음부터'}</Chip>
-        <span className="text-xs text-ink-soft">도수 {state.degrees}</span>
-      </div>
+    </div>
+  );
+}
+
+// 연습 중에 자주 누르는 버튼은 지판 아래에 바로 보이게 둔다.
+export function PentatonicActions({ state }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Chip active={state.preview} onClick={() => state.setPreview((value) => !value)}>{state.preview ? '정답 숨기기' : '정답 보기'}</Chip>
+      {state.practice !== 'FULL' && <Chip active={state.keepPrevious} onClick={() => state.setKeepPrevious((value) => !value)}>이전 줄 유지 {state.keepPrevious ? 'ON' : 'OFF'}</Chip>}
+      {state.practice === 'GUIDED' && <Chip active={state.hint} disabled={state.preview || state.complete} onClick={() => state.setHint((value) => !value)}>힌트 {state.hint ? '숨기기' : '표시'}</Chip>}
+      <Chip onClick={state.reset}>{state.complete ? '완료 · 다시하기' : '처음부터'}</Chip>
+      <span className="text-xs text-ink-soft">도수 {state.degrees}</span>
     </div>
   );
 }

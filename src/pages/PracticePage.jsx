@@ -1,6 +1,6 @@
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { MODES, LEGACY_MODE } from '../constants/modes.js';
+import { MODES, LEGACY_MODE, NOTE_MODES, navModeFor } from '../constants/modes.js';
 import { createFretboard, BASIC_MAX_FRET } from '../utils/fretboard.js';
 import { noteLabel, spellingPreference } from '../utils/notes.js';
 import { useMediaQuery } from '../hooks/useMediaQuery.js';
@@ -14,13 +14,15 @@ import { useTwoFiveOnePractice } from '../features/twoFiveOne/useTwoFiveOnePract
 import DesktopLayout from '../components/layout/DesktopLayout.jsx';
 import MobileLayout from '../components/layout/MobileLayout.jsx';
 import RotateDevice from '../components/layout/RotateDevice.jsx';
-import ModeNavigation from '../components/ModeNavigation.jsx';
+import AppBar from '../components/AppBar.jsx';
+import Overlay from '../components/Overlay.jsx';
 import QuizHeader from '../components/QuizHeader.jsx';
 import Fretboard from '../components/fretboard/Fretboard.jsx';
 import GlobalControls from '../components/controls/GlobalControls.jsx';
 import StringSelector from '../components/controls/StringSelector.jsx';
 import ThirdControls from '../components/controls/ThirdControls.jsx';
-import PentatonicControls from '../components/controls/PentatonicControls.jsx';
+import PentatonicControls, { PentatonicActions } from '../components/controls/PentatonicControls.jsx';
+import { Field, Segmented } from '../components/controls/ControlPrimitives.jsx';
 import ChordToneControls from '../components/controls/ChordToneControls.jsx';
 import DirectPracticeControls from '../components/controls/DirectPracticeControls.jsx';
 import TwoFiveOneControls from '../components/controls/TwoFiveOneControls.jsx';
@@ -34,7 +36,9 @@ export default function PracticePage() {
   const { mode: routeMode } = useParams();
   const valid = MODES.some((item) => item.id === routeMode);
   const mode = valid ? routeMode : 'all';
+  const navigate = useNavigate();
   const isMobile = useMediaQuery('(max-width: 900px)');
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [showFrets, setShowFrets] = useState(true);
   const [keepMarks, setKeepMarks] = useStoredState('fretmaster.keepMarks', true);
   const [flashKey, setFlashKey] = useState(null);
@@ -50,6 +54,8 @@ export default function PracticePage() {
 
   const state = mode === 'third' ? third : mode === 'pentatonic' ? penta : mode === 'chord-tone' ? chord : mode === 'two-five-one' ? twoFive : mode === 'direct' ? direct : base;
   const modeMeta = MODES.find((item) => item.id === mode);
+  const navMode = navModeFor(mode);
+  const isNoteMode = NOTE_MODES.includes(mode);
 
   const onNodeClick = useCallback((node) => {
     state.click(node);
@@ -95,28 +101,35 @@ export default function PracticePage() {
   }, [flashKey, getModeNodeView, keepMarks, mode, penta.preview]);
 
   const target = useMemo(() => mode === 'all' || mode === 'one' || mode === 'multi' || mode === 'sequence' ? noteLabel(base.target, preference) : state.target, [base.target, mode, preference, state.target]);
-  const controls = (
-    <section className="control-panel card">
-      {mode !== 'direct' && <details className="settings-details"><summary>음 · 줄 · 표시 설정</summary><div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+  const settings = (
+    <div className="flex flex-col gap-4">
+      <section className="card flex flex-col gap-4 p-4">
+        <h3 className="text-base font-semibold text-ink">{navMode.label}</h3>
+        {isNoteMode && <Field label="범위"><Segmented ariaLabel="음 찾기 범위" value={mode} onChange={(id) => navigate(`/practice/${id}`)} options={NOTE_MODES.map((id) => ({ value: id, label: MODES.find((item) => item.id === id).label }))} /></Field>}
+        {isNoteMode && <StringSelector mode={mode} oneString={base.oneString} setOneString={base.setOneString} multiStrings={base.multiStrings} setMultiStrings={base.setMultiStrings} />}
+        {mode === 'direct' && <DirectPracticeControls state={direct} />}
+        {mode === 'third' && <ThirdControls state={third} preference={preference} />}
+        {mode === 'pentatonic' && <PentatonicControls state={penta} preference={preference} />}
+        {mode === 'chord-tone' && <ChordToneControls state={chord} preference={preference} />}
+        {mode === 'two-five-one' && <TwoFiveOneControls state={twoFive} />}
+      </section>
+      {mode !== 'direct' && <section className="card flex flex-col gap-4 p-4">
+        <h3 className="text-base font-semibold text-ink">음 · 화면 표시</h3>
         <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} keepMarks={keepMarks} setKeepMarks={setKeepMarks} />
-        <StringSelector mode={mode} oneString={base.oneString} setOneString={base.setOneString} multiStrings={base.multiStrings} setMultiStrings={base.setMultiStrings} />
-      </div></details>}
-      {mode === 'direct' && <DirectPracticeControls state={direct} />}
-      {mode === 'third' && <ThirdControls state={third} preference={preference} />}
-      {mode === 'pentatonic' && <PentatonicControls state={penta} preference={preference} />}
-      {mode === 'chord-tone' && <ChordToneControls state={chord} preference={preference} />}
-      {mode === 'two-five-one' && <TwoFiveOneControls state={twoFive} />}
-    </section>
+      </section>}
+    </div>
   );
+  const controls = mode === 'pentatonic' ? <section className="control-panel card"><PentatonicActions state={penta} /></section> : null;
   const headerStatus = mode === 'chord-tone' ? <ChordDegreeProgress degrees={chord.tones.map((tone) => tone.degree)} step={chord.step} /> : mode === 'two-five-one' ? <TwoFiveOneProgress progression={twoFive.progression} chordIndex={twoFive.chordIndex} degrees={twoFive.tones.map((tone) => tone.degree)} step={twoFive.step} /> : state.status;
-  const header = <QuizHeader eyebrow={modeMeta.label} target={target} description={state.description} status={headerStatus} />;
+  const header = <QuizHeader eyebrow={isNoteMode ? `${navMode.label} · ${modeMeta.label}` : modeMeta.label} target={target} description={state.description} status={headerStatus} />;
   const fretboard = mode === 'direct' ? <DirectPracticePanel state={direct} /> : <Fretboard board={board} showFrets={showFrets} activeStrings={state.activeStrings} getNodeView={getNodeView} onNodeClick={onNodeClick} />;
 
   if (!valid) return <Navigate to="/practice/all" replace />;
   const Layout = isMobile ? MobileLayout : DesktopLayout;
   return (
     <>
-      <Layout navigation={<ModeNavigation mobile={isMobile} />} header={header} controls={controls} board={fretboard} />
+      <Layout navigation={<AppBar navMode={navMode} mobile={isMobile} onHelp={() => {}} onSettings={() => setSettingsOpen(true)} />} header={header} controls={controls} board={fretboard} />
+      <Overlay open={settingsOpen} onClose={() => setSettingsOpen(false)} title="설정">{settings}</Overlay>
       {mode !== 'direct' && <RotateDevice />}
     </>
   );

@@ -1,13 +1,13 @@
 export function Segmented({ options, value, onChange, ariaLabel }) {
   return (
-    <div className="flex flex-wrap gap-1 rounded-full bg-ceramic p-1" role="group" aria-label={ariaLabel}>
+    <div className="flex flex-wrap gap-1 rounded-[22px] bg-ceramic p-1" role="group" aria-label={ariaLabel}>
       {options.map((option) => <button type="button" key={option.value} aria-pressed={value === option.value} onClick={() => onChange(option.value)} className={`min-h-9 rounded-full px-4 text-[13px] font-semibold transition-all duration-200 active:scale-95 ${value === option.value ? 'bg-accent text-white shadow-[0_0_.5px_rgba(0,0,0,.14),0_1px_1px_rgba(0,0,0,.24)]' : 'text-ink-soft hover:text-ink'}`}>{option.label}</button>)}
     </div>
   );
 }
 
 export function Field({ label, children }) {
-  return <div className="flex flex-wrap items-center gap-2"><span className="min-w-14 text-[13px] font-bold text-ink-soft">{label}</span>{children}</div>;
+  return <div className="flex flex-col items-start gap-2"><span className="text-[13px] font-bold text-ink-soft">{label}</span><div className="flex flex-wrap items-center gap-2">{children}</div></div>;
 }
 
 export function Chip({ active, onClick, children, disabled }) {
