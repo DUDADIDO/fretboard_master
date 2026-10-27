@@ -1,4 +1,5 @@
-import { NOTES } from './notes.js';
+import { isSamePitchClass, NOTES } from './notes.js';
+import { getNoteAtFret } from './fretboard.js';
 
 // 차트(II-V-I in 12 Major Keys)와 같은 순서·표기. 4도씩 이동한다.
 export const CHART_KEYS = ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'B', 'E', 'A', 'D', 'G'];
@@ -51,4 +52,21 @@ export function getTwoFiveOne(key) {
       }),
     };
   });
+}
+
+export const SWEEP_DIRECTIONS = { UP: '6→1 상행', DOWN: '1→6 하행', UPDOWN: '6→1→6 왕복' };
+
+// 포지션(시작 프렛부터 width칸) 안의 코드톤을 음높이 순서로 훑는 순서. 왕복은 맨 위 음을 한 번만 친다.
+export function getSweepSequence(tones, startFret, width, direction) {
+  const up = [];
+  for (let string = 6; string >= 1; string -= 1) {
+    for (let fret = startFret; fret < startFret + width; fret += 1) {
+      const tone = tones.find((item) => isSamePitchClass(item.note, getNoteAtFret(string, fret)));
+      if (tone) up.push({ ...tone, key: `${string}-${fret}`, string, fret });
+    }
+  }
+  const down = [...up].reverse();
+  if (direction === 'DOWN') return down.map((item) => ({ ...item, pass: 0 }));
+  if (direction === 'UPDOWN') return [...up.map((item) => ({ ...item, pass: 0 })), ...down.slice(1).map((item) => ({ ...item, pass: 1 }))];
+  return up.map((item) => ({ ...item, pass: 0 }));
 }

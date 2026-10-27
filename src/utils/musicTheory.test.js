@@ -3,7 +3,7 @@ import { getNoteAtFret } from './fretboard.js';
 import { getChordTones } from './chords.js';
 import { getIntervalPattern } from './intervals.js';
 import { getPentatonicTargets } from './pentatonic.js';
-import { CHART_KEYS, getTwoFiveOne } from './twoFiveOne.js';
+import { CHART_KEYS, getSweepSequence, getTwoFiveOne } from './twoFiveOne.js';
 import { ALL_NOTE_SPELLINGS, canonicalNote, getNotePool, noteLabel, selectableNotes, spellingPreference } from './notes.js';
 
 describe('표준 튜닝과 지판', () => {
@@ -84,5 +84,27 @@ describe('ii-V-I', () => {
 
   it('B 키는 샵 계열로 표기한다', () => {
     expect(getTwoFiveOne('B')[2].tones.map((tone) => tone.name)).toEqual(['B', 'D#', 'F#', 'A#']);
+  });
+});
+
+describe('ii-V-I 포지션 훑기', () => {
+  const [dm7] = getTwoFiveOne('C');
+
+  it('5–8프렛 Dm7 코드톤을 6번줄부터 음높이 순서로 훑는다', () => {
+    const seq = getSweepSequence(dm7.tones, 5, 4, 'UP');
+    expect(seq.map((item) => `${item.string}-${item.fret}:${item.degree}`)).toEqual([
+      '6-5:5', '6-8:b7', '5-5:1', '5-8:b3', '4-7:5', '3-5:b7', '3-7:1', '2-6:b3', '1-5:5', '1-8:b7',
+    ]);
+    expect(seq.every((item) => item.fret >= 5 && item.fret <= 8)).toBe(true);
+  });
+
+  it('하행은 상행의 역순, 왕복은 맨 위 음을 한 번만 친다', () => {
+    const up = getSweepSequence(dm7.tones, 5, 4, 'UP');
+    expect(getSweepSequence(dm7.tones, 5, 4, 'DOWN').map((item) => item.key)).toEqual([...up].reverse().map((item) => item.key));
+    const round = getSweepSequence(dm7.tones, 5, 4, 'UPDOWN');
+    expect(round).toHaveLength(up.length * 2 - 1);
+    expect(round[up.length - 1].key).toBe('1-8');
+    expect(round[up.length].key).toBe('1-5');
+    expect(round.at(-1).key).toBe('6-5');
   });
 });

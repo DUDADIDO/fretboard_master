@@ -78,6 +78,8 @@ button { touch-action: manipulation; }
 .guitar-string.dimmed { opacity: .16; filter: saturate(.2); }
 .string-1 { --string-size: 1px; }.string-2 { --string-size: 1.5px; }.string-3 { --string-size: 2px; }.string-4 { --string-size: 2.7px; }.string-5 { --string-size: 3.5px; }.string-6 { --string-size: 4.2px; }
 .fret-slot { position: relative; min-width: 0; border-right: clamp(1px, .15vw, 3px) solid #94a3b8; z-index: 3; }
+.fret-slot.in-position { background: rgba(212,233,226,.16); }
+.fret-slot.in-position .fret-number { color: var(--color-brand); }
 .nut-slot { border-right: 4px solid #efe9dc; background: rgba(0,0,0,.25); }
 .fret-number { position: absolute; top: -31px; left: 50%; transform: translateX(-50%); color: rgba(0,0,0,.45); font-size: clamp(7px, .72vw, 11px); font-weight: 900; white-space: nowrap; }
 .inlay { position: absolute; top: 50%; left: 50%; width: clamp(6px, .68vw, 11px); aspect-ratio: 1; transform: translate(-50%,-50%); border-radius: 999px; background: #d7dde5; opacity: .82; box-shadow: 0 0 0 2px rgba(15,23,42,.42), 0 0 7px rgba(226,232,240,.28); }
