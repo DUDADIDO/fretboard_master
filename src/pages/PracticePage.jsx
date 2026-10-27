@@ -5,6 +5,7 @@ import { createFretboard, BASIC_MAX_FRET } from '../utils/fretboard.js';
 import { noteLabel, spellingPreference } from '../utils/notes.js';
 import { useMediaQuery } from '../hooks/useMediaQuery.js';
 import { useStoredState } from '../hooks/useStoredState.js';
+import { playFret } from '../utils/guitarSound.js';
 import { useNotePractice } from '../features/notePractice/useNotePractice.js';
 import { useThirdPractice } from '../features/thirdPractice/useThirdPractice.js';
 import { usePentatonicPractice } from '../features/pentatonic/usePentatonicPractice.js';
@@ -44,6 +45,7 @@ export default function PracticePage() {
   const [helpOpen, setHelpOpen] = useState(!seenGuide);
   const [showFrets, setShowFrets] = useState(true);
   const [keepMarks, setKeepMarks] = useStoredState('fretmaster.keepMarks', true);
+  const [soundOn, setSoundOn] = useStoredState('fretmaster.sound', true);
   const [flashKey, setFlashKey] = useState(null);
   const flashTimer = useRef(null);
   const [noteTypes, setNoteTypes] = useState({ natural: true, sharp: false, flat: false });
@@ -61,11 +63,13 @@ export default function PracticePage() {
   const isNoteMode = NOTE_MODES.includes(mode);
 
   const onNodeClick = useCallback((node) => {
+    // 맞든 틀리든 누른 칸의 소리를 들려준다.
+    if (soundOn) playFret(node.string, node.fret);
     state.click(node);
     setFlashKey(node.key);
     window.clearTimeout(flashTimer.current);
     flashTimer.current = window.setTimeout(() => setFlashKey(null), 700);
-  }, [state]);
+  }, [soundOn, state]);
   const getModeNodeView = useCallback((node) => {
     const wrong = state.wrongKey === node.key;
     if (mode === 'third') {
@@ -118,7 +122,7 @@ export default function PracticePage() {
       </section>
       {mode !== 'direct' && <section className="card flex flex-col gap-4 p-4">
         <h3 className="text-base font-semibold text-ink">음 · 화면 표시</h3>
-        <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} keepMarks={keepMarks} setKeepMarks={setKeepMarks} />
+        <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} keepMarks={keepMarks} setKeepMarks={setKeepMarks} soundOn={soundOn} setSoundOn={setSoundOn} />
       </section>}
     </div>
   );

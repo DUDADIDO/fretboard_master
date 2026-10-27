@@ -1,6 +1,6 @@
 import { Chip, Field } from './ControlPrimitives.jsx';
 
-export default function GlobalControls({ noteTypes, setNoteTypes, showFrets, setShowFrets, keepMarks, setKeepMarks }) {
+export default function GlobalControls({ noteTypes, setNoteTypes, showFrets, setShowFrets, keepMarks, setKeepMarks, soundOn, setSoundOn }) {
   const toggle = (key) => {
     const activeCount = Object.values(noteTypes).filter(Boolean).length;
     if (noteTypes[key] && activeCount === 1) return;
@@ -14,7 +14,7 @@ export default function GlobalControls({ noteTypes, setNoteTypes, showFrets, set
         <Chip active={noteTypes.flat} onClick={() => toggle('flat')}>♭</Chip>
       </Field>
       <div className="flex flex-wrap gap-2"><Chip active={showFrets} onClick={() => setShowFrets((value) => !value)}>프렛 번호 {showFrets ? 'ON' : 'OFF'}</Chip>
-      <Chip active={keepMarks} onClick={() => setKeepMarks((value) => !value)}>찾은 음 계속 표시 {keepMarks ? 'ON' : 'OFF'}</Chip></div>
+      <Chip active={keepMarks} onClick={() => setKeepMarks((value) => !value)}>찾은 음 계속 표시 {keepMarks ? 'ON' : 'OFF'}</Chip><Chip active={soundOn} onClick={() => setSoundOn((value) => !value)}>소리 {soundOn ? 'ON' : 'OFF'}</Chip></div>
     </div>
   );
 }

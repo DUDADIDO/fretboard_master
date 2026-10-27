@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getNoteAtFret } from './fretboard.js';
+import { fretFrequency } from './guitarSound.js';
 import { getChordTones } from './chords.js';
 import { getIntervalPattern } from './intervals.js';
 import { getPentatonicTargets } from './pentatonic.js';
@@ -133,5 +134,13 @@ describe('루트에서 이어 가는 손 경로', () => {
     const round = getHandPath(dm7, 10, 4, 'UPDOWN');
     expect(round).toHaveLength(up.length * 2 - 1);
     expect(round.at(-1).key).toBe(up[0].key);
+  });
+});
+
+describe('기타 소리 음높이', () => {
+  it('표준 튜닝 개방현과 프렛 음높이', () => {
+    expect([6, 5, 4, 3, 2, 1].map((string) => Math.round(fretFrequency(string, 0) * 100) / 100)).toEqual([82.41, 110, 146.83, 196, 246.94, 329.63]);
+    expect(fretFrequency(1, 5)).toBeCloseTo(440, 6);
+    expect(fretFrequency(6, 12)).toBeCloseTo(fretFrequency(6, 0) * 2, 6);
   });
 });
