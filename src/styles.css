@@ -114,7 +114,12 @@ button { touch-action: manipulation; }
   line-height: 1;
   transition: background-color .18s, border-color .18s, box-shadow .18s, opacity .18s;
 }
-.note-node:not(:disabled):hover { border-color: #d4e9e2; background: rgba(212,233,226,.22); cursor: pointer; }
+.note-node:not(:disabled) { cursor: pointer; }
+/* 빈 칸에만 호버 표시. 정답·오답 색을 덮지 않고, 터치 기기에서는 눌린 뒤 호버가 남지 않게 한다. */
+@media (hover: hover) {
+  .note-node:not(:disabled):not(.is-correct):not(.is-wrong):hover { border-color: #d4e9e2; background: rgba(212,233,226,.22); }
+  .note-node.is-correct:not(:disabled):hover { filter: brightness(1.12); }
+}
 .note-node.is-disabled { opacity: .16; cursor: default; }
 .note-node.is-correct { color: white; opacity: 1; border-color: rgba(255,255,255,.48); }
 .note-node.tone-note { background: #00754a; box-shadow: 0 0 0 2px rgba(212,233,226,.35); }
