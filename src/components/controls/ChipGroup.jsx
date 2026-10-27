@@ -79,11 +79,11 @@ export default function ChipGroup({ options, value, onChange, label, min = 1, bu
         {box && <span aria-hidden="true" className="selection-box" style={{ left: box.left, top: box.top, width: box.right - box.left, height: box.bottom - box.top }} />}
       </div>
       {bulk && (
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs whitespace-nowrap">
           <span className="tabular-nums text-ink-soft">{value.length}/{options.length} 선택</span>
           <button type="button" onClick={() => onChange(all)} disabled={value.length === all.length} className="font-semibold text-accent underline-offset-2 hover:underline disabled:text-ink-soft/50 disabled:no-underline">전체 선택</button>
           <button type="button" onClick={() => onChange(inverted)} disabled={inverted.length < min} className="font-semibold text-accent underline-offset-2 hover:underline disabled:text-ink-soft/50 disabled:no-underline">반전</button>
-          <span className="ml-auto hidden text-ink-soft/70 sm:inline">끌어서 박스 선택 · Shift+끌기로 추가</span>
+          <span className="ml-auto text-ink-soft/70">끌어서 박스 선택 · Shift로 추가</span>
         </div>
       )}
     </div>
