@@ -49,6 +49,9 @@ button { touch-action: manipulation; }
 .btn-dark { border-color: var(--color-ink); background: transparent; color: var(--color-ink); }
 .btn-dark:hover { background: rgba(0,0,0,.04); }
 
+/* 출제 범위 칩 영역의 드래그 선택 박스 */
+.selection-box { position: absolute; z-index: 5; pointer-events: none; border: 1.5px solid var(--color-accent); border-radius: 4px; background: rgba(0,117,74,.12); box-shadow: 0 0 0 1px rgba(255,255,255,.6) inset; }
+
 .dropdown-menu { box-shadow: 0 0 6px rgba(0,0,0,.14), 0 8px 12px rgba(0,0,0,.12); }
 
 .practice-board-area { height: clamp(280px, 48dvh, 480px); flex: none; }
