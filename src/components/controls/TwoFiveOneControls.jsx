@@ -7,13 +7,13 @@ export default function TwoFiveOneControls({ state }) {
   return (
     <div className="control-stack">
       <Section title="연습 방법">
-        <Field label="연습 방식"><Segmented ariaLabel="ii-V-I 연습 방식" value={state.practice} onChange={state.setPractice} options={[{ value: 'SWEEP', label: '포지션 훑기' }, { value: 'STRING', label: '한 줄 1·3·5·7' }]} /></Field>
+        {!state.box && <Field label="연습 방식"><Segmented ariaLabel="ii-V-I 연습 방식" value={state.practice} onChange={state.setPractice} options={[{ value: 'SWEEP', label: '포지션 훑기' }, { value: 'STRING', label: '한 줄 1·3·5·7' }]} /></Field>}
         {state.sweep ? (
           <>
             <Field label="방향"><Segmented ariaLabel="훑는 방향" value={state.direction} onChange={state.setDirection} options={Object.entries(SWEEP_DIRECTIONS).map(([value, label]) => ({ value, label }))} /></Field>
             <Field label="시작 위치">
-              <Select label="시작 프렛" value={state.rangeStart} onChange={(value) => state.moveStart(Number(value))}>{Array.from({ length: 23 }, (_, fret) => <option key={fret} value={fret}>6번줄 {fret}프렛 근처 루트</option>)}</Select>
-              <p className="w-full text-xs leading-relaxed text-ink-soft">줄마다 두 음씩 1→3→5→7을 이어 가요. 지판의 손 위치 막대를 끌어도 바뀌어요.</p>
+              <Select label="시작 프렛" value={state.rangeStart} onChange={(value) => state.moveStart(Number(value))}>{Array.from({ length: 23 }, (_, fret) => <option key={fret} value={fret}>{state.box ? `${fret}프렛부터 시작하는 포지션` : `6번줄 ${fret}프렛 근처 루트`}</option>)}</Select>
+              <p className="w-full text-xs leading-relaxed text-ink-soft">{state.box ? '6번줄 루트 한 칸 아래부터 5칸에 손을 고정해요. b7(7)과 1은 같은 줄에서 잡아요.' : '줄마다 두 음씩 1→3→5→7을 이어 가요.'} 지판의 손 위치 막대를 끌어도 바뀌어요.</p>
             </Field>
             <Field label="포지션 이동">
               <Segmented ariaLabel="포지션 자동 이동" value={state.shift} onChange={state.setShift} options={Object.entries(POSITION_SHIFTS).map(([value, label]) => ({ value, label }))} />

@@ -55,9 +55,12 @@ export default function PracticePage() {
   const penta = usePentatonicPractice(preference);
   const chord = useChordTonePractice(noteTypes, preference);
   const direct = useDirectPractice();
-  const twoFive = useTwoFiveOnePractice();
+  const twoFiveSweep = useTwoFiveOnePractice();
+  const twoFiveBox = useTwoFiveOnePractice('BOX');
+  const isTwoFive = mode === 'two-five-one' || mode === 'two-five-one-box';
+  const twoFive = mode === 'two-five-one-box' ? twoFiveBox : twoFiveSweep;
 
-  const state = mode === 'third' ? third : mode === 'pentatonic' ? penta : mode === 'chord-tone' ? chord : mode === 'two-five-one' ? twoFive : mode === 'direct' ? direct : base;
+  const state = mode === 'third' ? third : mode === 'pentatonic' ? penta : mode === 'chord-tone' ? chord : isTwoFive ? twoFive : mode === 'direct' ? direct : base;
   const modeMeta = MODES.find((item) => item.id === mode);
   const navMode = navModeFor(mode);
   const isNoteMode = NOTE_MODES.includes(mode);
@@ -92,14 +95,14 @@ export default function PracticePage() {
       const tone = degree === '1' ? 'tone-root' : degree?.includes('3') ? 'tone-third' : degree === '5' ? 'tone-fifth' : 'tone-seventh';
       return { disabled: node.string !== chord.string, wrong, correct, tone, label: wrong ? noteLabel(node.note, spellingPreference(chord.root, preference)) : degree };
     }
-    if (mode === 'two-five-one') {
+    if (isTwoFive) {
       const hit = twoFive.found.find((item) => item.key === node.key);
       const degree = hit?.degree ?? '';
       const tone = degree === '1' ? 'tone-root' : degree.includes('3') ? 'tone-third' : degree === '5' ? 'tone-fifth' : 'tone-seventh';
       return { disabled: !twoFive.activeStrings.includes(node.string) || twoFive.complete, wrong, correct: Boolean(hit), tone, label: wrong ? noteLabel(node.note, spellingPreference(twoFive.key, preference)) : degree };
     }
     return { disabled: node.fret > BASIC_MAX_FRET || !base.activeStrings.includes(node.string), wrong, correct: base.found.has(node.key), tone: 'tone-note', label: wrong ? noteLabel(node.note, spellingPreference(base.target, preference)) : base.found.has(node.key) ? noteLabel(base.target, preference) : '' };
-  }, [base, chord, mode, penta, preference, state.wrongKey, third, twoFive]);
+  }, [base, chord, isTwoFive, mode, penta, preference, state.wrongKey, third, twoFive]);
   // 표시 유지를 끄면 실제 기타처럼 방금 누른 정답만 잠깐 보여주고 루트를 포함해 이전에 찾은 위치는 모두 숨긴다.
   const getNodeView = useCallback((node) => {
     const view = getModeNodeView(node);
@@ -120,7 +123,7 @@ export default function PracticePage() {
         {mode === 'third' && <ThirdControls state={third} preference={preference} />}
         {mode === 'pentatonic' && <PentatonicControls state={penta} preference={preference} />}
         {mode === 'chord-tone' && <ChordToneControls state={chord} preference={preference} />}
-        {mode === 'two-five-one' && <TwoFiveOneControls state={twoFive} />}
+        {isTwoFive && <TwoFiveOneControls state={twoFive} />}
       </section>
       {mode !== 'direct' && <section className="card flex flex-col gap-4 p-5">
         <h3 className="text-lg font-bold text-ink">공통 설정</h3>
@@ -129,9 +132,9 @@ export default function PracticePage() {
     </div>
   );
   const controls = mode === 'pentatonic' ? <section className="control-panel card"><PentatonicActions state={penta} /></section> : null;
-  const headerStatus = mode === 'chord-tone' ? <ChordDegreeProgress degrees={chord.tones.map((tone) => tone.degree)} step={chord.step} /> : mode === 'two-five-one' ? <TwoFiveOneProgress progression={twoFive.activeChords} chordIndex={twoFive.chordIndex} degrees={twoFive.tones.map((tone) => tone.degree)} step={twoFive.step} total={twoFive.sweep ? twoFive.tones.length : 0} /> : state.status;
+  const headerStatus = mode === 'chord-tone' ? <ChordDegreeProgress degrees={chord.tones.map((tone) => tone.degree)} step={chord.step} /> : isTwoFive ? <TwoFiveOneProgress progression={twoFive.activeChords} chordIndex={twoFive.chordIndex} degrees={twoFive.tones.map((tone) => tone.degree)} step={twoFive.step} total={twoFive.sweep ? twoFive.tones.length : 0} /> : state.status;
   const header = <QuizHeader eyebrow={isNoteMode ? `${navMode.label} · ${modeMeta.label}` : modeMeta.label} target={target} description={state.description} status={headerStatus} />;
-  const fretboard = mode === 'direct' ? <DirectPracticePanel state={direct} /> : <Fretboard board={board} showFrets={showFrets} activeStrings={state.activeStrings} position={mode === 'two-five-one' && twoFive.sweep ? twoFive.hand : null} onPositionChange={twoFive.setRange} getNodeView={getNodeView} onNodeClick={onNodeClick} />;
+  const fretboard = mode === 'direct' ? <DirectPracticePanel state={direct} /> : <Fretboard board={board} showFrets={showFrets} activeStrings={state.activeStrings} position={isTwoFive && twoFive.sweep ? twoFive.hand : null} onPositionChange={twoFive.setRange} getNodeView={getNodeView} onNodeClick={onNodeClick} />;
 
   if (!valid) return <Navigate to="/practice/all" replace />;
   const Layout = isMobile ? MobileLayout : DesktopLayout;

@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getChordToneHint } from '../../utils/chords.js';
 import { isSamePitchClass } from '../../utils/notes.js';
-import { CHART_KEYS, getHandPath, getTwoFiveOne, GUIDE_DEGREES, nextPositionOffset, SWEEP_DIRECTIONS } from '../../utils/twoFiveOne.js';
+import { CHART_KEYS, getBoxPath, getHandPath, getTwoFiveOne, GUIDE_DEGREES, nextPositionOffset, SWEEP_DIRECTIONS } from '../../utils/twoFiveOne.js';
 
 const ALL_STRINGS = [1, 2, 3, 4, 5, 6];
 export const CHORD_ROMANS = ['ii', 'V', 'I'];
 
-export function useTwoFiveOnePractice() {
-  const [practice, setPractice] = useState('SWEEP');
+// initialPractice 'BOX': 손을 한 포지션에 고정하고 b7·1을 같은 줄에서 잡는 별도 모드
+export function useTwoFiveOnePractice(initialPractice = 'SWEEP') {
+  const [practice, setPractice] = useState(initialPractice);
   // 포지션 = 한 손에 잡히는 프렛 범위. 자동 이동을 켜면 오프셋만큼 위로 옮겨 간다.
   const [rangeStart, setRangeStart] = useState(5);
   const [rangeEnd, setRangeEnd] = useState(8);
@@ -38,11 +39,13 @@ export function useTwoFiveOnePractice() {
   const chordTones = useMemo(() => toneSet === 'GUIDE' ? chord.tones.filter((tone) => tone.degree === '1' || GUIDE_DEGREES.includes(tone.degree)) : chord.tones, [chord, toneSet]);
   // 포지션 훑기: 시작 위치 근처 루트에서 출발해 줄마다 두 음씩 1→3→5→7→1… 이어 간다.
   // 줄을 넘어갈 때마다 손이 진행 방향으로 조금씩 옮겨 간다.
-  const sweep = practice === 'SWEEP';
+  // 포지션 고정(BOX): 6번줄 루트 기준 5칸 안에서 손을 움직이지 않고 훑는다.
+  const box = practice === 'BOX';
+  const sweep = practice === 'SWEEP' || box;
   const position = rangeStart + offset;
   const lastFret = rangeEnd + offset;
   const width = lastFret - position + 1;
-  const tones = useMemo(() => sweep ? getHandPath(chordTones, position, direction) : chordTones, [chordTones, direction, position, sweep, width]);
+  const tones = useMemo(() => box ? getBoxPath(chordTones, position, direction) : sweep ? getHandPath(chordTones, position, direction) : chordTones, [box, chordTones, direction, position, sweep, width]);
   const activeStrings = sweep || string === 0 ? ALL_STRINGS : [string];
   const hand = sweep ? tones[Math.min(step, tones.length - 1)]?.hand ?? [position, lastFret] : null;
 
@@ -112,12 +115,15 @@ export function useTwoFiveOnePractice() {
   const current = tones[Math.min(step, tones.length - 1)];
   const where = string === 0 ? '아무 줄에서' : `${string}번 줄에서`;
   const name = showNames ? ` (${current.name})` : '';
+  // b7(7) 다음 1이 같은 줄이면 그걸 짚어 준다.
+  const next = tones[step + 1];
+  const sameString = box && current.degree.includes('7') && next?.degree === '1' && next.string === current.string ? ' · 다음 1도 같은 줄' : '';
   const ask = !sweep ? `${where} ${current.degree}${name}를 찾으세요`
     : step === 0 ? `${SWEEP_DIRECTIONS[direction]} · 6번줄 루트 1${name}에서 시작`
-      : `${SWEEP_DIRECTIONS[direction]} · 손 ${hand[0]}–${hand[1]}프렛 · 다음 ${current.degree}${name}`;
-  const hint = sweep ? '루트에서 시작해 줄마다 두 음씩 1→3→5→7→1… 이어 가세요. 줄을 넘어갈 때마다 손이 진행 방향으로 조금씩 옮겨 가요.' : complete || rootFret == null || string === 0 ? '루트를 찾은 뒤 같은 줄 기준으로 힌트가 표시됩니다.' : getChordToneHint(rootFret, string, current.degree);
+      : `${SWEEP_DIRECTIONS[direction]} · 손 ${hand[0]}–${hand[1]}프렛 · 다음 ${current.degree}${name}${sameString}`;
+  const hint = box ? '손을 포지션에 고정한 채 6번줄 루트부터 1→3→5→7→1… 순서로 누르세요. b7(7)과 1은 같은 줄에서 잡아요.' : sweep ? '루트에서 시작해 줄마다 두 음씩 1→3→5→7→1… 이어 가세요. 줄을 넘어갈 때마다 손이 진행 방향으로 조금씩 옮겨 가요.' : complete || rootFret == null || string === 0 ? '루트를 찾은 뒤 같은 줄 기준으로 힌트가 표시됩니다.' : getChordToneHint(rootFret, string, current.degree);
   return {
-    practice, setPractice, sweep, position, lastFret, width, rangeStart, rangeEnd, moveStart, setRangeEnd, setSpan, setRange, shift, setShift, shiftBy, setShiftBy, offset,
+    practice, setPractice, sweep, box, position, lastFret, width, rangeStart, rangeEnd, moveStart, setRangeEnd, setSpan, setRange, shift, setShift, shiftBy, setShiftBy, offset,
     direction, setDirection, hand,
     keyOrder, setKeyOrder, key, setKey, string, setString, toneSet, setToneSet, showNames, setShowNames,
     chordFilter, setChordFilter, toggleChord, keyPool, setKeyPool, toggleKey, usesPool,
