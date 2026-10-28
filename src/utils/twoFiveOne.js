@@ -71,9 +71,13 @@ const OPEN_PITCH = [null, 24, 19, 15, 10, 5, 0];
 // 6번줄 루트에서 1번줄까지 올라가며 줄을 넘어갈 때마다 손이 조금씩 오른쪽으로 옮겨 간다.
 // 예) C키 Dm7, 10프렛: 6줄 10·13 → 5줄 12·15 → 4줄 12·15 → 3줄 14·17 → 2줄 15·18 → 1줄 17·20
 // direction: 'UP'(6→1), 'UPDOWN'(올라갔다 같은 길로 6번줄 루트까지)
-export const NOTES_PER_STRING = 2;
+// perString: 6번줄부터 줄마다 칠 음 수.
+export const NOTES_PER_STRING = [2, 2, 2, 2, 2, 2];
+// 6번줄은 루트 하나만 치고 줄마다 (3·5) (7·1)을 번갈아 → b7(7)과 1이 같은 줄에 온다.
+// 예) C키 Dm7, 10프렛: 6줄 10 → 5줄 8·12 → 4줄 10·12 → 3줄 10·14 → 2줄 13·15 → 1줄 13·17
+export const SEVEN_ONE_PER_STRING = [1, 2, 2, 2, 2, 2];
 
-export function getHandPath(tones, startFret, direction, maxFret = 24) {
+export function getHandPath(tones, startFret, direction, perString = NOTES_PER_STRING, maxFret = 24) {
   const strings = [6, 5, 4, 3, 2, 1];
   const step = 1;
   const pcs = tones.map((tone) => NOTES.indexOf(tone.note));
@@ -84,8 +88,8 @@ export function getHandPath(tones, startFret, direction, maxFret = 24) {
   const build = (rootFret) => {
     const path = [];
     let pitch = OPEN_PITCH[strings[0]] + rootFret;
-    for (const string of strings) {
-      for (let count = 0; count < NOTES_PER_STRING; count += 1) {
+    for (const [index, string] of strings.entries()) {
+      for (let count = 0; count < perString[index]; count += 1) {
         if (path.length) { pitch += step; while (!toneAt(pitch)) pitch += step; }
         const fret = pitch - OPEN_PITCH[string];
         if (fret < 0 || fret > maxFret) return null;
@@ -105,7 +109,7 @@ export function getHandPath(tones, startFret, direction, maxFret = 24) {
   }
   if (!path) return [];
 
-  // 손 위치: 지금 줄에서 치는 두 음을 덮는 범위(최소 4칸)
+  // 손 위치: 지금 줄에서 치는 음을 덮는 범위(최소 4칸)
   const withHand = path.map((item) => {
     const frets = path.filter((other) => other.string === item.string).map((other) => other.fret);
     const low = Math.min(...frets);
@@ -115,36 +119,3 @@ export function getHandPath(tones, startFret, direction, maxFret = 24) {
   return [...withHand, ...[...withHand].reverse().slice(1).map((item) => ({ ...item, pass: 1 }))];
 }
 
-// 손을 한 포지션(6번줄 루트 기준 한 칸 아래 ~ 세 칸 위, 5칸)에 고정하고 1→3→5→7→1… 음높이 순서로 훑는 경로.
-// 다음 음이 지금 줄의 포지션 안에 있으면 같은 줄에서, 없으면 다음 줄에서 잡는다.
-// 그러면 b7(7)과 1이 같은 줄에 온다. 예) C키 Dm7, 10프렛: 6줄 10·13 → 5줄 12 → 4줄 10·12 → 3줄 10 → 2줄 10·13 → 1줄 10·13
-export const BOX_BELOW = 1;
-export const BOX_ABOVE = 3;
-
-export function getBoxPath(tones, startFret, direction, maxFret = 24) {
-  const pcs = tones.map((tone) => NOTES.indexOf(tone.note));
-  const toneAt = (pitch) => tones[pcs.indexOf((pitch + 4) % 12)]; // 기준 E2 = E(4)
-  const rootPc = pcs[tones.findIndex((tone) => tone.degree === '1')];
-  if (rootPc == null) return [];
-
-  // 포지션 왼쪽 끝이 시작 프렛에 오도록 그 한 칸 위에 가장 가까운 6번줄 루트를 고른다.
-  let rootFret = null;
-  for (let fret = BOX_BELOW; fret <= maxFret - BOX_ABOVE; fret += 1) {
-    if ((fret + 4) % 12 === rootPc && (rootFret == null || Math.abs(fret - startFret - BOX_BELOW) < Math.abs(rootFret - startFret - BOX_BELOW))) rootFret = fret;
-  }
-  if (rootFret == null) return [];
-  const hand = [Math.max(0, rootFret - BOX_BELOW), rootFret + BOX_ABOVE];
-
-  const path = [];
-  let string = 6;
-  for (let pitch = OPEN_PITCH[6] + rootFret; string >= 1; pitch += 1) {
-    if (!toneAt(pitch)) continue;
-    while (string >= 1 && pitch - OPEN_PITCH[string] > hand[1]) string -= 1;
-    if (string < 1) break;
-    const fret = pitch - OPEN_PITCH[string];
-    if (fret < hand[0]) continue; // 줄을 넘어간 직후 포지션 왼쪽 밖의 음은 건너뛴다
-    path.push({ ...toneAt(pitch), string, fret, key: `${string}-${fret}`, hand, pass: 0, anchor: toneAt(pitch).degree === '1' });
-  }
-  if (direction !== 'UPDOWN') return path;
-  return [...path, ...[...path].reverse().slice(1).map((item) => ({ ...item, pass: 1 }))];
-}

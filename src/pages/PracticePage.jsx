@@ -56,9 +56,9 @@ export default function PracticePage() {
   const chord = useChordTonePractice(noteTypes, preference);
   const direct = useDirectPractice();
   const twoFiveSweep = useTwoFiveOnePractice();
-  const twoFiveBox = useTwoFiveOnePractice('BOX');
-  const isTwoFive = mode === 'two-five-one' || mode === 'two-five-one-box';
-  const twoFive = mode === 'two-five-one-box' ? twoFiveBox : twoFiveSweep;
+  const twoFiveSevenOne = useTwoFiveOnePractice('SEVEN_ONE');
+  const isTwoFive = mode === 'two-five-one' || mode === 'two-five-one-71';
+  const twoFive = mode === 'two-five-one-71' ? twoFiveSevenOne : twoFiveSweep;
 
   const state = mode === 'third' ? third : mode === 'pentatonic' ? penta : mode === 'chord-tone' ? chord : isTwoFive ? twoFive : mode === 'direct' ? direct : base;
   const modeMeta = MODES.find((item) => item.id === mode);
