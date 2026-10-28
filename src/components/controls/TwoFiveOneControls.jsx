@@ -13,7 +13,7 @@ export default function TwoFiveOneControls({ state }) {
             <Field label="방향"><Segmented ariaLabel="훑는 방향" value={state.direction} onChange={state.setDirection} options={Object.entries(SWEEP_DIRECTIONS).map(([value, label]) => ({ value, label }))} /></Field>
             <Field label="시작 위치">
               <Select label="시작 프렛" value={state.rangeStart} onChange={(value) => state.moveStart(Number(value))}>{Array.from({ length: 23 }, (_, fret) => <option key={fret} value={fret}>6번줄 {fret}프렛 근처 루트</option>)}</Select>
-              <p className="w-full text-xs leading-relaxed text-ink-soft">{state.sevenOne ? '6번줄은 루트만, 그 뒤 줄마다 (3·5) (7·1)을 이어 가요.' : '줄마다 두 음씩 1→3→5→7을 이어 가요.'} 지판의 손 위치 막대를 끌어도 바뀌어요.</p>
+              <p className="w-full text-xs leading-relaxed text-ink-soft">{state.sevenOne ? '6번줄은 루트만, 그 뒤 줄마다 (3·5) (7·1)을 이어 가요.' : '줄마다 두 음씩 1→3→5→7을 이어 가요.'}</p>
             </Field>
             <Field label="포지션 이동">
               <Segmented ariaLabel="포지션 자동 이동" value={state.shift} onChange={state.setShift} options={Object.entries(POSITION_SHIFTS).map(([value, label]) => ({ value, label }))} />

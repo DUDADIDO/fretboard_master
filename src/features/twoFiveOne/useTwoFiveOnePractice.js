@@ -46,7 +46,6 @@ export function useTwoFiveOnePractice(initialPractice = 'SWEEP') {
   const width = lastFret - position + 1;
   const tones = useMemo(() => sweep ? getHandPath(chordTones, position, direction, sevenOne ? SEVEN_ONE_PER_STRING : undefined) : chordTones, [sevenOne, chordTones, direction, position, sweep, width]);
   const activeStrings = sweep || string === 0 ? ALL_STRINGS : [string];
-  const hand = sweep ? tones[Math.min(step, tones.length - 1)]?.hand ?? [position, lastFret] : null;
 
   const resetChord = useCallback(() => { setStep(0); setRootFret(null); setFound([]); setWrongKey(null); }, []);
   const restart = useCallback(() => { setChordIndex(0); resetChord(); }, [resetChord]);
@@ -114,16 +113,13 @@ export function useTwoFiveOnePractice(initialPractice = 'SWEEP') {
   const current = tones[Math.min(step, tones.length - 1)];
   const where = string === 0 ? '아무 줄에서' : `${string}번 줄에서`;
   const name = showNames ? ` (${current.name})` : '';
-  // b7(7) 다음 1이 같은 줄이면 그걸 짚어 준다.
-  const next = tones[step + 1];
-  const sameString = sevenOne && current.degree.includes('7') && next?.degree === '1' && next.string === current.string ? ' · 다음 1도 같은 줄' : '';
   const ask = !sweep ? `${where} ${current.degree}${name}를 찾으세요`
     : step === 0 ? `${SWEEP_DIRECTIONS[direction]} · 6번줄 루트 1${name}에서 시작`
-      : `${SWEEP_DIRECTIONS[direction]} · 손 ${hand[0]}–${hand[1]}프렛 · 다음 ${current.degree}${name}${sameString}`;
+      : `${SWEEP_DIRECTIONS[direction]} · 다음 ${current.degree}${name}`;
   const hint = sevenOne ? '6번줄은 루트만 치고, 그다음 줄부터 (3·5) (7·1)을 두 음씩 번갈아 이어 가세요. b7(7)과 1은 같은 줄이에요. 손은 오른쪽으로 서서히 옮겨 가요.' : sweep ? '루트에서 시작해 줄마다 두 음씩 1→3→5→7→1… 이어 가세요. 줄을 넘어갈 때마다 손이 진행 방향으로 조금씩 옮겨 가요.' : complete || rootFret == null || string === 0 ? '루트를 찾은 뒤 같은 줄 기준으로 힌트가 표시됩니다.' : getChordToneHint(rootFret, string, current.degree);
   return {
     practice, setPractice, sweep, sevenOne, position, lastFret, width, rangeStart, rangeEnd, moveStart, setRangeEnd, setSpan, setRange, shift, setShift, shiftBy, setShiftBy, offset,
-    direction, setDirection, hand,
+    direction, setDirection,
     keyOrder, setKeyOrder, key, setKey, string, setString, toneSet, setToneSet, showNames, setShowNames,
     chordFilter, setChordFilter, toggleChord, keyPool, setKeyPool, toggleKey, usesPool,
     progression, activeChords, chord, chordIndex, tones, step, found, wrongKey, click, activeStrings, complete, hint,
