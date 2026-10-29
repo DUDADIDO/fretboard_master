@@ -50,6 +50,9 @@ export default function PracticePage() {
   const [keepMarks, setKeepMarks] = useStoredState('fretmaster.keepMarks', true);
   const [soundOn, setSoundOn] = useStoredState('fretmaster.sound', true);
   const [theme, setTheme] = useTheme();
+  // 지판 보기 범위. 저장된 값이 없으면 휴대폰은 자동, PC는 전체
+  const [storedView, setView] = useStoredState('fretmaster.view', null);
+  const view = storedView ?? (isMobile ? 'AUTO' : 'FULL');
   const [skin, setSkin] = useStoredState('fretmaster.skin', { wood: 'rosewood', inlay: 'dot', material: 'pearl' });
   const [flashKey, setFlashKey] = useState(null);
   const flashTimer = useRef(null);
@@ -145,6 +148,21 @@ export default function PracticePage() {
     return view.correct && !revealed ? { ...view, correct: false, label: '' } : view;
   }, [flashKey, getModeNodeView, keepMarks, mode, penta.preview]);
 
+  // 자동: 음 찾기 모드는 출제 범위(0–12프렛), 펜타토닉은 지금 포지션 근처만. 나머지는 답을 미리 알려주지 않도록 전체.
+  const range = useMemo(() => {
+    const fixed = { LOW: [0, 12], MID: [5, 17], HIGH: [12, 24] }[view];
+    if (fixed) return fixed;
+    if (view !== 'AUTO') return [0, 24];
+    if (isNoteMode) return [0, BASIC_MAX_FRET];
+    if (mode === 'pentatonic') {
+      const frets = penta.targets.map((item) => item.fret);
+      const middle = Math.round((Math.min(...frets) + Math.max(...frets)) / 2);
+      const from = Math.max(0, Math.min(24 - 8, middle - 4));
+      return [from, from + 8];
+    }
+    return [0, 24];
+  }, [isNoteMode, mode, penta.targets, view]);
+
   const target = useMemo(() => mode === 'all' || mode === 'one' || mode === 'multi' || mode === 'sequence' ? noteLabel(base.target, preference) : state.target, [base.target, mode, preference, state.target]);
   const settings = (
     <div className="flex flex-col gap-4">
@@ -163,14 +181,14 @@ export default function PracticePage() {
       {micMode && <section className="card flex flex-col gap-4 p-5"><MicControls mic={mic} device={micDevice} setDevice={setMicDevice} /></section>}
       {mode !== 'direct' && <section className="card flex flex-col gap-4 p-5">
         <h3 className="text-lg font-bold text-ink">공통 설정</h3>
-        <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} keepMarks={keepMarks} setKeepMarks={setKeepMarks} soundOn={soundOn} setSoundOn={setSoundOn} skin={skin} setSkin={setSkin} theme={theme} setTheme={setTheme} />
+        <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} keepMarks={keepMarks} setKeepMarks={setKeepMarks} soundOn={soundOn} setSoundOn={setSoundOn} skin={skin} setSkin={setSkin} theme={theme} setTheme={setTheme} view={view} setView={setView} />
       </section>}
     </div>
   );
   const controls = mode === 'pentatonic' ? <section className="control-panel card"><PentatonicActions state={penta} /></section> : null;
   const headerStatus = mode === 'chord-tone' ? <ChordDegreeProgress degrees={chord.tones.map((tone) => tone.degree)} step={chord.step} /> : isTwoFive ? <TwoFiveOneProgress progression={twoFive.activeChords} chordIndex={twoFive.chordIndex} degrees={twoFive.tones.map((tone) => tone.degree)} step={twoFive.step} total={twoFive.sweep ? twoFive.tones.length : 0} /> : state.status;
   const header = <QuizHeader eyebrow={isNoteMode ? `${navMode.label} · ${modeMeta.label}` : modeMeta.label} target={target} description={state.description} status={headerStatus} />;
-  const fretboard = mode === 'direct' ? <DirectPracticePanel state={direct} mic={mic} /> : <Fretboard board={board} showFrets={showFrets} skin={skin} activeStrings={state.activeStrings} getNodeView={getNodeView} onNodeClick={onNodeClick} />;
+  const fretboard = mode === 'direct' ? <DirectPracticePanel state={direct} mic={mic} /> : <Fretboard board={board} showFrets={showFrets} skin={skin} range={range} activeStrings={state.activeStrings} getNodeView={getNodeView} onNodeClick={onNodeClick} />;
 
   if (!valid) return <Navigate to="/practice/all" replace />;
   const Layout = isMobile ? MobileLayout : DesktopLayout;

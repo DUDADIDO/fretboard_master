@@ -228,3 +228,7 @@ button { touch-action: manipulation; }
   .quiz-header > :nth-child(2) { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+
+/* 보기 범위를 좁혀 지판 중간이 잘린 쪽은 모서리를 각지게 */
+.fretboard.cut-left { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.fretboard.cut-right { border-top-right-radius: 0; border-bottom-right-radius: 0; }

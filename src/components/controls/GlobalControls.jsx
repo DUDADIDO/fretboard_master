@@ -4,6 +4,8 @@ import { INLAY_MATERIALS, INLAY_STYLES, WOODS } from '../fretboard/FretboardSkin
 import { FINISHES } from '../fretboard/GuitarEnds.jsx';
 import { THEMES } from '../../hooks/useTheme.js';
 
+export const VIEWS = { AUTO: '자동', FULL: '전체', LOW: '0–12', MID: '5–17', HIGH: '12–24' };
+
 const toOptions = (map) => Object.entries(map).map(([value, label]) => ({ value, label: typeof label === 'string' ? label : label.label }));
 
 export const NOTE_TYPE_OPTIONS = [{ value: 'natural', label: '기본음' }, { value: 'sharp', label: '♯' }, { value: 'flat', label: '♭' }];
@@ -16,7 +18,7 @@ export function NoteTypePicker({ noteTypes, onChange }) {
   );
 }
 
-export default function GlobalControls({ noteTypes, setNoteTypes, showFrets, setShowFrets, keepMarks, setKeepMarks, soundOn, setSoundOn, skin, setSkin, theme, setTheme }) {
+export default function GlobalControls({ noteTypes, setNoteTypes, showFrets, setShowFrets, keepMarks, setKeepMarks, soundOn, setSoundOn, skin, setSkin, theme, setTheme, view, setView }) {
   const setPart = (part) => (value) => setSkin((current) => ({ ...current, [part]: value }));
   // I자는 원래 금속 막대라 고르면 재질을 메탈로 맞춘다. 재질은 그 뒤에 바꿀 수 있다.
   const setInlay = (value) => setSkin((current) => ({ ...current, inlay: value, ...(value === 'bar' ? { material: 'metal' } : {}) }));
@@ -32,6 +34,10 @@ export default function GlobalControls({ noteTypes, setNoteTypes, showFrets, set
         <Switch label="프렛 번호" checked={showFrets} onChange={setShowFrets} />
       </Section>
       <Section title="지판">
+        <Field label="보기 범위">
+          <Segmented ariaLabel="지판 보기 범위" value={view} onChange={setView} options={toOptions(VIEWS)} />
+          <p className="w-full text-xs leading-relaxed text-ink-soft">자동: 음 찾기는 0–12프렛, 펜타토닉은 지금 포지션만 크게 보여줘요. 휴대폰에서 칸이 커져 누르기 편해요.</p>
+        </Field>
         <Field label="나무"><Segmented ariaLabel="지판 나무" value={skin.wood} onChange={setPart('wood')} options={toOptions(WOODS)} /></Field>
         <Field label="인레이"><Segmented ariaLabel="인레이 모양" value={skin.inlay} onChange={setInlay} options={toOptions(INLAY_STYLES)} /></Field>
         <Field label="헤드·바디 색"><Segmented ariaLabel="헤드·바디 색" value={skin.finish ?? 'black'} onChange={setPart('finish')} options={toOptions(FINISHES)} /></Field>
