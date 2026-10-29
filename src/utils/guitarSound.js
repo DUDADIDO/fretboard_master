@@ -62,9 +62,47 @@ function pluckBuffer(context, frequency) {
   return { buffer, period };
 }
 
+// 실제 녹음된 기타 소리(smplr의 General MIDI 사운드폰트). 고르면 그때 받아 오고, 받는 동안은 합성 소리로 낸다.
+export const INSTRUMENTS = {
+  synth: '합성(가벼움)',
+  electric_guitar_clean: '일렉 클린',
+  electric_guitar_jazz: '재즈',
+  overdriven_guitar: '크런치',
+  distortion_guitar: '디스토션',
+  acoustic_guitar_steel: '어쿠스틱',
+  acoustic_guitar_nylon: '클래식',
+};
+let instrument = 'synth';
+const samplers = new Map(); // 이름 → { player, ready }
+const sampled = new Map(); // 줄마다 울리는 샘플 소리의 stop 함수
+
+export function setInstrument(name) {
+  instrument = INSTRUMENTS[name] ? name : 'synth';
+  if (instrument === 'synth' || samplers.has(instrument)) return;
+  const context = getContext();
+  if (!context) return;
+  const entry = { player: null, ready: false };
+  samplers.set(instrument, entry);
+  import('smplr').then(({ Soundfont }) => {
+    entry.player = Soundfont(context, { instrument });
+    return entry.player.ready;
+  }).then(() => { entry.ready = true; }).catch(() => samplers.delete(instrument));
+}
+
+function playSample(string, fret, volume) {
+  const entry = samplers.get(instrument);
+  if (!entry?.ready) return false;
+  sampled.get(string)?.();
+  // MIDI 40 = E2(6번줄 개방현)
+  const stop = entry.player.start({ note: 40 + fretSemitone(string, fret), velocity: Math.round(70 + volume * 50) });
+  sampled.set(string, stop);
+  return true;
+}
+
 export function playFret(string, fret, volume = 0.6) {
   const context = getContext();
   if (!context) return;
+  if (instrument !== 'synth' && playSample(string, fret, volume)) return;
   const frequency = fretFrequency(string, fret);
   const { buffer, period } = pluckBuffer(context, frequency);
   // 다음 샘플과 평균을 내므로 되먹임 지연이 반 샘플 짧아져 실제 주기는 period - 0.5
