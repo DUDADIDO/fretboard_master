@@ -34,7 +34,6 @@ export default defineConfig({
         // 글꼴과 악기 샘플은 처음 받을 때 저장해 두고 오프라인에서도 쓴다.
         runtimeCaching: [
           { urlPattern: ({ url }) => /fonts\.(googleapis|gstatic)\.com|cdn\.jsdelivr\.net/.test(url.host), handler: 'StaleWhileRevalidate', options: { cacheName: 'fonts' } },
-          { urlPattern: ({ url }) => url.pathname.startsWith('/sounds/'), handler: 'CacheFirst', options: { cacheName: 'amp-tones' } },
           { urlPattern: ({ url }) => /smpldsnds|gleitz\.github\.io|danigb\.github\.io/.test(url.host), handler: 'CacheFirst', options: { cacheName: 'instrument-samples', expiration: { maxEntries: 400 } } },
         ],
       },

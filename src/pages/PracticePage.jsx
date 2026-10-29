@@ -7,7 +7,7 @@ import { useMediaQuery } from '../hooks/useMediaQuery.js';
 import { useStoredState } from '../hooks/useStoredState.js';
 import { useMicPitch } from '../hooks/useMicPitch.js';
 import { useTheme } from '../hooks/useTheme.js';
-import { fretSemitone, playFret, setInstrument } from '../utils/guitarSound.js';
+import { fretSemitone, loadGuitar, playFret } from '../utils/guitarSound.js';
 import { useNotePractice } from '../features/notePractice/useNotePractice.js';
 import { useThirdPractice } from '../features/thirdPractice/useThirdPractice.js';
 import { usePentatonicPractice } from '../features/pentatonic/usePentatonicPractice.js';
@@ -50,14 +50,11 @@ export default function PracticePage() {
   const [showFrets, setShowFrets] = useState(true);
   const [keepMarks, setKeepMarks] = useStoredState('fretmaster.keepMarks', true);
   const [soundOn, setSoundOn] = useStoredState('fretmaster.sound', true);
-  const [instrument, setInstrumentName] = useStoredState('fretmaster.instrument', 'electric_guitar_clean');
-  // 브라우저는 사용자가 한 번 누른 뒤에야 소리를 낼 수 있어서, 첫 입력 때 악기를 받아 온다.
+  // 브라우저는 사용자가 한 번 누른 뒤에야 소리를 낼 수 있어서, 첫 입력 때 기타 소리를 받아 온다.
   useEffect(() => {
-    const load = () => setInstrument(instrument);
-    window.addEventListener('pointerdown', load, { once: true });
-    if (document.userActivation?.hasBeenActive) load();
-    return () => window.removeEventListener('pointerdown', load);
-  }, [instrument]);
+    window.addEventListener('pointerdown', loadGuitar, { once: true });
+    return () => window.removeEventListener('pointerdown', loadGuitar);
+  }, []);
   const [theme, setTheme] = useTheme();
   // 지판 보기 범위. 저장된 값이 없으면 휴대폰은 자동, PC는 전체
   const [storedView, setView] = useStoredState('fretmaster.view', null);
@@ -195,7 +192,7 @@ export default function PracticePage() {
       {micMode && <section className="card flex flex-col gap-4 p-5"><MicControls mic={mic} device={micDevice} setDevice={setMicDevice} /></section>}
       {mode !== 'direct' && <section className="card flex flex-col gap-4 p-5">
         <h3 className="text-lg font-bold text-ink">공통 설정</h3>
-        <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} keepMarks={keepMarks} setKeepMarks={setKeepMarks} soundOn={soundOn} setSoundOn={setSoundOn} instrument={instrument} setInstrument={setInstrumentName} skin={skin} setSkin={setSkin} theme={theme} setTheme={setTheme} view={view} setView={setView} />
+        <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} keepMarks={keepMarks} setKeepMarks={setKeepMarks} soundOn={soundOn} setSoundOn={setSoundOn} skin={skin} setSkin={setSkin} theme={theme} setTheme={setTheme} view={view} setView={setView} />
       </section>}
     </div>
   );

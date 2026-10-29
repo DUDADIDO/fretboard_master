@@ -2,7 +2,6 @@ import ChipGroup from './ChipGroup.jsx';
 import { Field, Section, Segmented, Switch } from './ControlPrimitives.jsx';
 import { INLAY_MATERIALS, INLAY_STYLES, WOODS } from '../fretboard/FretboardSkin.jsx';
 import { THEMES } from '../../hooks/useTheme.js';
-import { INSTRUMENTS } from '../../utils/guitarSound.js';
 
 export const VIEWS = { AUTO: '자동', FULL: '전체', LOW: '0–12', MID: '5–17', HIGH: '12–24' };
 
@@ -18,7 +17,7 @@ export function NoteTypePicker({ noteTypes, onChange }) {
   );
 }
 
-export default function GlobalControls({ noteTypes, setNoteTypes, showFrets, setShowFrets, keepMarks, setKeepMarks, soundOn, setSoundOn, instrument, setInstrument, skin, setSkin, theme, setTheme, view, setView }) {
+export default function GlobalControls({ noteTypes, setNoteTypes, showFrets, setShowFrets, keepMarks, setKeepMarks, soundOn, setSoundOn, skin, setSkin, theme, setTheme, view, setView }) {
   const setPart = (part) => (value) => setSkin((current) => ({ ...current, [part]: value }));
   // I자는 원래 금속 막대라 고르면 재질을 메탈로 맞춘다. 재질은 그 뒤에 바꿀 수 있다.
   const setInlay = (value) => setSkin((current) => ({ ...current, inlay: value, ...(value === 'bar' ? { material: 'metal' } : {}) }));
@@ -30,8 +29,7 @@ export default function GlobalControls({ noteTypes, setNoteTypes, showFrets, set
       <Section title="화면 · 소리">
         <Field label="테마"><Segmented ariaLabel="화면 테마" value={theme} onChange={setTheme} options={toOptions(THEMES)} /></Field>
         <Switch label="찾은 음 계속 표시" description="끄면 실제 기타처럼 누른 음이 잠깐만 보여요" checked={keepMarks} onChange={setKeepMarks} />
-        <Switch label="소리" description="지판을 누르면 그 음을 들려줘요" checked={soundOn} onChange={setSoundOn} />
-        {soundOn && <Field label="악기 소리"><Segmented ariaLabel="악기 소리" value={instrument} onChange={setInstrument} options={toOptions(INSTRUMENTS)} /></Field>}
+        <Switch label="소리" description="지판을 누르면 클래식 기타 소리로 그 음을 들려줘요" checked={soundOn} onChange={setSoundOn} />
         <Switch label="프렛 번호" checked={showFrets} onChange={setShowFrets} />
       </Section>
       <Section title="지판">

@@ -62,76 +62,29 @@ function pluckBuffer(context, frequency) {
   return { buffer, period };
 }
 
-// 실제 녹음된 기타 소리(smplr의 General MIDI 사운드폰트). 고르면 그때 받아 오고, 받는 동안은 합성 소리로 낸다.
-export const INSTRUMENTS = {
-  synth: '합성(가벼움)',
-  electric_guitar_clean: '일렉 클린',
-  electric_guitar_jazz: '재즈',
-  overdriven_guitar: '크런치',
-  distortion_guitar: '디스토션',
-  acoustic_guitar_steel: '어쿠스틱',
-  acoustic_guitar_nylon: '클래식',
-  'amp-clean': '앰프 클린 · Two-Rock',
-  'amp-overdrive': '오버드라이브 · SD-1',
-  'amp-crunch': '크런치 · 5150III',
-  'amp-highgain': '하이게인 · Rectifier',
-};
-let instrument = 'synth';
-const samplers = new Map(); // 이름 → { player, ready }
+// 실제 녹음된 클래식(나일론) 기타 소리(smplr의 General MIDI 사운드폰트). 처음 누를 때 받아 오고, 받는 동안은 합성 소리로 낸다.
+// 연습할 때 앞 음이 뒤 음을 덮지 않게 짧게(NOTE_SECONDS 뒤 RELEASE_SECONDS 동안 사라짐) 울린다.
+const NOTE_SECONDS = 0.7;
+const RELEASE_SECONDS = 0.25;
+let nylon = null; // { player, ready }
 const sampled = new Map(); // 줄마다 울리는 샘플 소리의 stop 함수
 
-// NAM 앰프 톤: 모든 음(E2부터 49음)을 실제 앰프 캡처(NAM)에 미리 통과시켜 녹음한 스프라이트.
-// 한 음이 1.5초 칸에 들어 있고, MP3 앞 지연을 피하려고 칸마다 소리가 시작하는 지점을 찾아 둔다.
-const AMP_SLOT = 1.5;
-const AMP_LENGTH = 1.35;
-function loadAmp(context, name, entry) {
-  fetch(`/sounds/${name}.mp3`).then((response) => response.arrayBuffer()).then((data) => context.decodeAudioData(data)).then((buffer) => {
-    const samples = buffer.getChannelData(0);
-    const slot = Math.round(AMP_SLOT * buffer.sampleRate);
-    entry.onsets = Array.from({ length: 49 }, (_, index) => {
-      let position = index * slot;
-      const end = Math.min(samples.length, position + Math.round(0.2 * buffer.sampleRate));
-      while (position < end && Math.abs(samples[position]) < 0.004) position += 1;
-      return Math.max(index * slot, position - Math.round(0.002 * buffer.sampleRate)) / buffer.sampleRate;
-    });
-    entry.buffer = buffer;
-    entry.ready = true;
-  }).catch(() => samplers.delete(name));
-}
-
-export function setInstrument(name) {
-  instrument = INSTRUMENTS[name] ? name : 'synth';
-  if (instrument === 'synth' || samplers.has(instrument)) return;
+export function loadGuitar() {
   const context = getContext();
-  if (!context) return;
+  if (!context || nylon) return;
   const entry = { player: null, ready: false };
-  samplers.set(instrument, entry);
-  if (instrument.startsWith('amp-')) { loadAmp(context, instrument, entry); return; }
+  nylon = entry;
   import('smplr').then(({ Soundfont }) => {
-    entry.player = Soundfont(context, { instrument });
+    entry.player = Soundfont(context, { instrument: 'acoustic_guitar_nylon' });
     return entry.player.ready;
-  }).then(() => { entry.ready = true; }).catch(() => samplers.delete(instrument));
-}
-
-function playAmp(entry, string, fret, volume) {
-  const context = getContext();
-  const now = context.currentTime;
-  const source = context.createBufferSource();
-  source.buffer = entry.buffer;
-  const gain = context.createGain();
-  gain.gain.value = volume * 1.4;
-  source.connect(gain).connect(context.destination);
-  source.start(now, entry.onsets[fretSemitone(string, fret)], AMP_LENGTH);
-  return () => { gain.gain.setTargetAtTime(0.0001, context.currentTime, 0.012); source.stop(context.currentTime + 0.06); };
+  }).then(() => { entry.ready = true; }).catch(() => { nylon = null; });
 }
 
 function playSample(string, fret, volume) {
-  const entry = samplers.get(instrument);
-  if (!entry?.ready) return false;
+  if (!nylon?.ready) return false;
   sampled.get(string)?.();
-  if (entry.buffer) { sampled.set(string, playAmp(entry, string, fret, volume)); return true; }
   // MIDI 40 = E2(6번줄 개방현)
-  const stop = entry.player.start({ note: 40 + fretSemitone(string, fret), velocity: Math.round(70 + volume * 50) });
+  const stop = nylon.player.start({ note: 40 + fretSemitone(string, fret), velocity: Math.round(70 + volume * 50), duration: NOTE_SECONDS, ampRelease: RELEASE_SECONDS });
   sampled.set(string, stop);
   return true;
 }
@@ -139,7 +92,7 @@ function playSample(string, fret, volume) {
 export function playFret(string, fret, volume = 0.6) {
   const context = getContext();
   if (!context) return;
-  if (instrument !== 'synth' && playSample(string, fret, volume)) return;
+  if (playSample(string, fret, volume)) return;
   const frequency = fretFrequency(string, fret);
   const { buffer, period } = pluckBuffer(context, frequency);
   // 다음 샘플과 평균을 내므로 되먹임 지연이 반 샘플 짧아져 실제 주기는 period - 0.5
@@ -154,7 +107,7 @@ export function playFret(string, fret, volume = 0.6) {
   const gain = context.createGain();
   const now = context.currentTime;
   gain.gain.setValueAtTime(volume, now);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 2);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + NOTE_SECONDS + RELEASE_SECONDS);
   source.connect(tone).connect(gain).connect(context.destination);
 
   const before = ringing.get(string);
@@ -166,5 +119,5 @@ export function playFret(string, fret, volume = 0.6) {
   ringing.set(string, { source, gain });
   source.onended = () => { if (ringing.get(string)?.source === source) ringing.delete(string); };
   source.start(now);
-  source.stop(now + 2.1);
+  source.stop(now + NOTE_SECONDS + RELEASE_SECONDS + 0.05);
 }
