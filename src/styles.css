@@ -105,6 +105,11 @@ button { touch-action: manipulation; }
 .position-bar { position: absolute; left: 50%; bottom: -26px; transform: translateX(-50%); min-width: 76px; padding: 3px 10px; border-radius: 50px; background: var(--color-accent); color: #fff; font-size: 11px; font-weight: 700; text-align: center; white-space: nowrap; cursor: grab; pointer-events: auto; touch-action: none; box-shadow: 0 0 6px rgba(0,0,0,.24); }
 .position-bar:active { cursor: grabbing; transform: translateX(-50%) scale(.95); }
 .nut-slot { border-right: 4px solid #efe9dc; background: rgba(0,0,0,.25); }
+.fretboard-shell.with-numbers.with-side-dots { padding-top: 56px; }
+.fretboard-shell:not(.with-numbers):not(.with-side-dots) { padding-top: 18px; }
+.side-dots { position: absolute; top: -25px; left: 50%; display: flex; gap: 3px; transform: translate(-50%,-50%); pointer-events: none; transition: top .25s ease; }
+.with-numbers .side-dots { top: -42px; }
+.side-dot { width: 7px; height: 7px; border-radius: 999px; background: radial-gradient(circle at 35% 30%, #fff 0 25%, #ddd8cd 60%, #a69e90); box-shadow: 0 0 0 1px rgba(0,0,0,.4); }
 .fret-number { position: absolute; top: -31px; left: 50%; transform: translateX(-50%); color: rgba(0,0,0,.45); font-size: clamp(8px, .72vw, 11px); font-weight: 700; white-space: nowrap; }
 .skin-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 .wood-layer { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -113,9 +118,14 @@ button { touch-action: manipulation; }
 .wood-maple .guitar-string, .wood-roasted .guitar-string { box-shadow: 0 1px 2px rgba(0,0,0,.55); }
 /* 인레이: 줄 사이(2·5번줄 바깥쪽 여백 안) 영역에 놓는다 */
 .inlay-shape { position: absolute; z-index: 1; left: 16%; width: 68%; top: 12%; height: 76%; pointer-events: none; overflow: visible; filter: drop-shadow(0 0 1px rgba(0,0,0,.45)); }
-.inlay-bar { left: 8%; width: 84%; top: 6%; height: 88%; }
 .inlay-bird { left: -10%; width: 120%; top: 4%; height: 92%; }
 .inlay-dot { position: absolute; z-index: 1; left: 50%; width: clamp(7px, .8vw, 13px); aspect-ratio: 1; transform: translate(-50%,-50%); border-radius: 999px; pointer-events: none; box-shadow: 0 0 0 1px rgba(0,0,0,.35), inset 0 0 2px rgba(0,0,0,.25); }
+.inlay-bar { position: absolute; z-index: 1; left: 50%; width: clamp(4px, .42vw, 7px); height: 30%; transform: translate(-50%,-50%); border-radius: 999px; pointer-events: none; box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.45); }
+.inlay-bar.is-double { height: 24%; }
+.inlay-bar.inlay-pearl { background: linear-gradient(180deg, #f4efe6, #ddd4ec 30%, #d2ebe4 60%, #f0dcc0); }
+.inlay-bar.inlay-abalone { background: linear-gradient(180deg, #1f8f86, #3a5fc2 30%, #7b4cc0 55%, #1aa37a 80%, #2f7fd0); }
+.inlay-metal { background: repeating-linear-gradient(180deg, rgba(255,255,255,.18) 0 1px, transparent 1px 3px), linear-gradient(90deg, #7b828a, #d9dee3 35%, #f7f9fb 50%, #c3c9cf 65%, #6f767e); }
+.inlay-dot.inlay-metal { background: radial-gradient(circle at 35% 30%, #fff, transparent 45%), radial-gradient(circle, #e3e7eb, #8a9198); }
 .inlay-pearl { background: radial-gradient(circle at 35% 30%, #fff, transparent 45%), conic-gradient(from 40deg, #f6f1ea, #e6e0f2, #dcefeb, #f4e6d2, #f6f1ea); }
 .inlay-abalone { background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.7), transparent 40%), conic-gradient(from 10deg, #1f8f86, #3a5fc2, #7b4cc0, #1aa37a, #2f7fd0, #1f8f86); }
 .inlay-black { background: radial-gradient(circle at 35% 30%, #4a4440, #0d0b0a 60%); }
@@ -163,6 +173,11 @@ button { touch-action: manipulation; }
   .fretboard-shell { min-height: 0; padding: 24px 6px 6px; }
   .fretboard { height: 100%; min-height: 130px; border-block-width: 3px; }
   .fret-number { top: -20px; }
+  .fretboard-shell.with-numbers.with-side-dots { padding-top: 36px; }
+  .fretboard-shell:not(.with-numbers):not(.with-side-dots) { padding-top: 8px; }
+  .side-dots { top: -14px; }
+  .with-numbers .side-dots { top: -30px; }
+  .side-dot { width: 4px; height: 4px; }
   .fretboard-shell.has-position { padding-bottom: 26px; }
   .position-handle { width: 12px; height: 40px; }
   .position-bar { bottom: -21px; font-size: 9px; padding: 2px 8px; min-width: 60px; }

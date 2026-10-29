@@ -26,7 +26,7 @@ export const WOODS = {
 };
 
 export const INLAY_STYLES = { dot: '도트', block: '블록', trapezoid: '사다리꼴', bar: 'I자', bird: '버드', none: '없음' };
-export const INLAY_MATERIALS = { pearl: '자개', abalone: '아발론', black: '블랙' };
+export const INLAY_MATERIALS = { pearl: '자개', abalone: '아발론', metal: '메탈', black: '블랙' };
 
 // 지판 전체를 덮는 나무결. viewBox 없이 실제 픽셀 크기로 그려서 결이 늘어나지 않는다.
 export function WoodGrain({ wood }) {
@@ -81,6 +81,14 @@ export function SkinDefs() {
           <stop offset=".85" stopColor="#2f7fd0" />
           <stop offset="1" stopColor="#9fd8c4" />
         </linearGradient>
+        {/* 헤어라인 알루미늄: 가운데 밝은 반사띠, 가장자리는 어둡게 */}
+        <linearGradient id="inlay-metal" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#7b828a" />
+          <stop offset=".35" stopColor="#d9dee3" />
+          <stop offset=".5" stopColor="#f7f9fb" />
+          <stop offset=".65" stopColor="#c3c9cf" />
+          <stop offset="1" stopColor="#6f767e" />
+        </linearGradient>
         <linearGradient id="inlay-black" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#2a2622" />
           <stop offset=".5" stopColor="#0d0b0a" />
@@ -124,10 +132,12 @@ const filterFor = (material) => ({ pearl: 'url(#inlay-pearl-shimmer)', abalone: 
 export function Inlay({ shape, material, fret, index }) {
   if (shape === 'none') return null;
   const double = fret === 12 || fret === 24;
-  if (shape === 'dot') {
+  // 도트와 I자(줄을 가로지르는 짧은 막대, 끝이 둥근 알약 모양)는 칸 폭과 상관없이 모양이 같아야 해서 HTML로 그린다.
+  if (shape === 'dot' || shape === 'bar') {
+    const className = `inlay-${shape} inlay-${material} ${double ? 'is-double' : ''}`;
     return double
-      ? <><span className={`inlay-dot inlay-${material}`} style={{ top: '33.33%' }} /><span className={`inlay-dot inlay-${material}`} style={{ top: '66.67%' }} /></>
-      : <span className={`inlay-dot inlay-${material}`} style={{ top: '50%' }} />;
+      ? <><span className={className} style={{ top: '33.33%' }} /><span className={className} style={{ top: '66.67%' }} /></>
+      : <span className={className} style={{ top: '50%' }} />;
   }
   const common = { fill: fill(material), filter: filterFor(material), stroke: 'rgba(0,0,0,.35)', strokeWidth: 1, vectorEffect: 'non-scaling-stroke' };
   if (shape === 'bird') {
@@ -138,11 +148,10 @@ export function Inlay({ shape, material, fret, index }) {
       </svg>
     );
   }
-  // 블록·사다리꼴·I자는 칸 크기에 맞춰 늘어나도 되는 도형이라 비율을 고정하지 않는다.
+  // 블록·사다리꼴은 칸 크기에 맞춰 늘어나도 되는 도형이라 비율을 고정하지 않는다.
   const shapes = {
     block: <rect x="0" y="0" width="100" height="100" {...common} />,
     trapezoid: <polygon points="0,10 100,0 100,100 0,90" {...common} />,
-    bar: <rect x="36" y="0" width="28" height="100" rx="3" {...common} />,
   };
   return (
     <svg className={`inlay-shape inlay-${shape} ${double ? 'is-double' : ''}`} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">

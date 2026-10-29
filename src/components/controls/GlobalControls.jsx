@@ -16,6 +16,8 @@ export function NoteTypePicker({ noteTypes, onChange }) {
 
 export default function GlobalControls({ noteTypes, setNoteTypes, showFrets, setShowFrets, keepMarks, setKeepMarks, soundOn, setSoundOn, skin, setSkin }) {
   const setPart = (part) => (value) => setSkin((current) => ({ ...current, [part]: value }));
+  // I자는 원래 금속 막대라 고르면 재질을 메탈로 맞춘다. 재질은 그 뒤에 바꿀 수 있다.
+  const setInlay = (value) => setSkin((current) => ({ ...current, inlay: value, ...(value === 'bar' ? { material: 'metal' } : {}) }));
   return (
     <div className="control-stack">
       <Section title="음">
@@ -28,7 +30,8 @@ export default function GlobalControls({ noteTypes, setNoteTypes, showFrets, set
       </Section>
       <Section title="지판">
         <Field label="나무"><Segmented ariaLabel="지판 나무" value={skin.wood} onChange={setPart('wood')} options={toOptions(WOODS)} /></Field>
-        <Field label="인레이"><Segmented ariaLabel="인레이 모양" value={skin.inlay} onChange={setPart('inlay')} options={toOptions(INLAY_STYLES)} /></Field>
+        <Field label="인레이"><Segmented ariaLabel="인레이 모양" value={skin.inlay} onChange={setInlay} options={toOptions(INLAY_STYLES)} /></Field>
+        <Switch label="사이드 도트" description="넥 옆면 표시를 프렛 번호 위에 보여줘요" checked={skin.sideDots !== false} onChange={setPart('sideDots')} />
         {skin.inlay !== 'none' && <Field label="인레이 재질"><Segmented ariaLabel="인레이 재질" value={skin.material} onChange={setPart('material')} options={toOptions(INLAY_MATERIALS)} /></Field>}
       </Section>
     </div>
