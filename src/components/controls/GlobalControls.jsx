@@ -1,7 +1,6 @@
 import ChipGroup from './ChipGroup.jsx';
 import { Field, Section, Segmented, Switch } from './ControlPrimitives.jsx';
 import { INLAY_MATERIALS, INLAY_STYLES, WOODS } from '../fretboard/FretboardSkin.jsx';
-import { FINISHES } from '../fretboard/GuitarEnds.jsx';
 import { THEMES } from '../../hooks/useTheme.js';
 
 export const VIEWS = { AUTO: '자동', FULL: '전체', LOW: '0–12', MID: '5–17', HIGH: '12–24' };
@@ -40,7 +39,6 @@ export default function GlobalControls({ noteTypes, setNoteTypes, showFrets, set
         </Field>
         <Field label="나무"><Segmented ariaLabel="지판 나무" value={skin.wood} onChange={setPart('wood')} options={toOptions(WOODS)} /></Field>
         <Field label="인레이"><Segmented ariaLabel="인레이 모양" value={skin.inlay} onChange={setInlay} options={toOptions(INLAY_STYLES)} /></Field>
-        <Field label="헤드·바디 색"><Segmented ariaLabel="헤드·바디 색" value={skin.finish ?? 'black'} onChange={setPart('finish')} options={toOptions(FINISHES)} /></Field>
         <Switch label="사이드 도트" description="넥 옆면 표시를 프렛 번호 위에 보여줘요" checked={skin.sideDots !== false} onChange={setPart('sideDots')} />
         {skin.inlay !== 'none' && <Field label="인레이 재질"><Segmented ariaLabel="인레이 재질" value={skin.material} onChange={setPart('material')} options={toOptions(INLAY_MATERIALS)} /></Field>}
       </Section>
