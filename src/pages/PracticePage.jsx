@@ -46,6 +46,7 @@ export default function PracticePage() {
   const [showFrets, setShowFrets] = useState(true);
   const [keepMarks, setKeepMarks] = useStoredState('fretmaster.keepMarks', true);
   const [soundOn, setSoundOn] = useStoredState('fretmaster.sound', true);
+  const [skin, setSkin] = useStoredState('fretmaster.skin', { wood: 'rosewood', inlay: 'dot', material: 'pearl' });
   const [flashKey, setFlashKey] = useState(null);
   const flashTimer = useRef(null);
   const [noteTypes, setNoteTypes] = useState({ natural: true, sharp: false, flat: false });
@@ -127,14 +128,14 @@ export default function PracticePage() {
       </section>
       {mode !== 'direct' && <section className="card flex flex-col gap-4 p-5">
         <h3 className="text-lg font-bold text-ink">공통 설정</h3>
-        <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} keepMarks={keepMarks} setKeepMarks={setKeepMarks} soundOn={soundOn} setSoundOn={setSoundOn} />
+        <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} keepMarks={keepMarks} setKeepMarks={setKeepMarks} soundOn={soundOn} setSoundOn={setSoundOn} skin={skin} setSkin={setSkin} />
       </section>}
     </div>
   );
   const controls = mode === 'pentatonic' ? <section className="control-panel card"><PentatonicActions state={penta} /></section> : null;
   const headerStatus = mode === 'chord-tone' ? <ChordDegreeProgress degrees={chord.tones.map((tone) => tone.degree)} step={chord.step} /> : isTwoFive ? <TwoFiveOneProgress progression={twoFive.activeChords} chordIndex={twoFive.chordIndex} degrees={twoFive.tones.map((tone) => tone.degree)} step={twoFive.step} total={twoFive.sweep ? twoFive.tones.length : 0} /> : state.status;
   const header = <QuizHeader eyebrow={isNoteMode ? `${navMode.label} · ${modeMeta.label}` : modeMeta.label} target={target} description={state.description} status={headerStatus} />;
-  const fretboard = mode === 'direct' ? <DirectPracticePanel state={direct} /> : <Fretboard board={board} showFrets={showFrets} activeStrings={state.activeStrings} getNodeView={getNodeView} onNodeClick={onNodeClick} />;
+  const fretboard = mode === 'direct' ? <DirectPracticePanel state={direct} /> : <Fretboard board={board} showFrets={showFrets} skin={skin} activeStrings={state.activeStrings} getNodeView={getNodeView} onNodeClick={onNodeClick} />;
 
   if (!valid) return <Navigate to="/practice/all" replace />;
   const Layout = isMobile ? MobileLayout : DesktopLayout;

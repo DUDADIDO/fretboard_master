@@ -81,9 +81,10 @@ button { touch-action: manipulation; }
   max-height: 330px;
   min-height: 175px;
   overflow: visible;
-  border-block: 5px solid #2b2420;
+  border-block: 5px solid var(--binding, #e9dfc9);
   border-radius: 6px;
   background: #3a2a1f;
+  isolation: isolate;
   box-shadow: 0 0 6px rgba(0,0,0,.24), 0 8px 12px rgba(0,0,0,.14);
 }
 .string-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
@@ -105,10 +106,19 @@ button { touch-action: manipulation; }
 .position-bar:active { cursor: grabbing; transform: translateX(-50%) scale(.95); }
 .nut-slot { border-right: 4px solid #efe9dc; background: rgba(0,0,0,.25); }
 .fret-number { position: absolute; top: -31px; left: 50%; transform: translateX(-50%); color: rgba(0,0,0,.45); font-size: clamp(8px, .72vw, 11px); font-weight: 700; white-space: nowrap; }
-.inlay { position: absolute; top: 50%; left: 50%; width: clamp(6px, .68vw, 11px); aspect-ratio: 1; transform: translate(-50%,-50%); border-radius: 999px; background: #d7dde5; opacity: .82; box-shadow: 0 0 0 2px rgba(15,23,42,.42), 0 0 7px rgba(226,232,240,.28); }
-.inlay.double { background: transparent; box-shadow: none; }
-.inlay.double::before, .inlay.double::after { content: ""; position: absolute; left: 0; width: 100%; aspect-ratio: 1; border-radius: inherit; background: #d7dde5; box-shadow: 0 0 0 2px rgba(15,23,42,.42), 0 0 7px rgba(226,232,240,.28); }
-.inlay.double::before { top: -60px; }.inlay.double::after { bottom: -60px; }
+.skin-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+.wood-layer { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; pointer-events: none; }
+/* 니켈 프렛 와이어: 가운데가 밝은 금속 띠 */
+.fret-slot:not(.nut-slot) { border-right-color: transparent; border-image: linear-gradient(90deg, #6f7781, #f4f6f8 45%, #c9ced4 60%, #5f6670) 1; }
+.wood-maple .guitar-string, .wood-roasted .guitar-string { box-shadow: 0 1px 2px rgba(0,0,0,.55); }
+/* 인레이: 줄 사이(2·5번줄 바깥쪽 여백 안) 영역에 놓는다 */
+.inlay-shape { position: absolute; z-index: 1; left: 16%; width: 68%; top: 12%; height: 76%; pointer-events: none; overflow: visible; filter: drop-shadow(0 0 1px rgba(0,0,0,.45)); }
+.inlay-bar { left: 8%; width: 84%; top: 6%; height: 88%; }
+.inlay-bird { left: -10%; width: 120%; top: 4%; height: 92%; }
+.inlay-dot { position: absolute; z-index: 1; left: 50%; width: clamp(7px, .8vw, 13px); aspect-ratio: 1; transform: translate(-50%,-50%); border-radius: 999px; pointer-events: none; box-shadow: 0 0 0 1px rgba(0,0,0,.35), inset 0 0 2px rgba(0,0,0,.25); }
+.inlay-pearl { background: radial-gradient(circle at 35% 30%, #fff, transparent 45%), conic-gradient(from 40deg, #f6f1ea, #e6e0f2, #dcefeb, #f4e6d2, #f6f1ea); }
+.inlay-abalone { background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.7), transparent 40%), conic-gradient(from 10deg, #1f8f86, #3a5fc2, #7b4cc0, #1aa37a, #2f7fd0, #1f8f86); }
+.inlay-black { background: radial-gradient(circle at 35% 30%, #4a4440, #0d0b0a 60%); }
 .note-node {
   position: absolute;
   left: 50%;
@@ -157,7 +167,6 @@ button { touch-action: manipulation; }
   .position-handle { width: 12px; height: 40px; }
   .position-bar { bottom: -21px; font-size: 9px; padding: 2px 8px; min-width: 60px; }
   .note-node { width: clamp(14px, 2.5vw, 26px); height: clamp(14px, 2.5vw, 26px); font-size: clamp(5px, .9vw, 9px); }
-  .inlay.double::before { top: -35px; }.inlay.double::after { bottom: -35px; }
 }
 @media (max-width: 900px) and (orientation: portrait) {
   .rotate-warning { display: flex; }
