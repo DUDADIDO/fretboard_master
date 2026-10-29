@@ -139,13 +139,8 @@ export function Inlay({ shape, material, fret, index }) {
       ? <><span className={className} style={{ top: '33.33%' }} /><span className={className} style={{ top: '66.67%' }} /></>
       : <span className={className} style={{ top: '50%' }} />;
   }
-  // I자의 12·24프렛은 같은 길이 막대 두 개를 나란히(줄 방향으로 옆에) 놓는다.
-  if (shape === 'bar') {
-    const className = `inlay-bar inlay-${material}`;
-    return double
-      ? <><span className={className} style={{ left: 'calc(50% - 6px)' }} /><span className={className} style={{ left: 'calc(50% + 6px)' }} /></>
-      : <span className={className} />;
-  }
+  // I자의 12·24프렛은 같은 막대를 더 길게 하나로 그린다.
+  if (shape === 'bar') return <span className={`inlay-bar inlay-${material} ${double ? 'is-long' : ''}`} />;
   const common = { fill: fill(material), filter: filterFor(material), stroke: 'rgba(0,0,0,.35)', strokeWidth: 1, vectorEffect: 'non-scaling-stroke' };
   if (shape === 'bird') {
     const [kind, tilt] = BIRDS[index % BIRDS.length];
