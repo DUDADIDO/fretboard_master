@@ -15,7 +15,8 @@
     "react-dom": "latest",
     "react-router-dom": "latest",
     "smplr": "^1.1.0",
-    "tonal": "^6.5.1"
+    "tonal": "^6.5.1",
+    "ts-fsrs": "^6.0.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "latest",

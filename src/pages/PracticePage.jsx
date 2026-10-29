@@ -26,7 +26,8 @@ import GlobalControls from '../components/controls/GlobalControls.jsx';
 import StringSelector from '../components/controls/StringSelector.jsx';
 import ThirdControls from '../components/controls/ThirdControls.jsx';
 import PentatonicControls, { PentatonicActions } from '../components/controls/PentatonicControls.jsx';
-import { Field, Section, Segmented } from '../components/controls/ControlPrimitives.jsx';
+import { Field, Section, Segmented, Switch } from '../components/controls/ControlPrimitives.jsx';
+import { resetReview } from '../utils/srs.js';
 import ChordToneControls from '../components/controls/ChordToneControls.jsx';
 import DirectPracticeControls from '../components/controls/DirectPracticeControls.jsx';
 import TwoFiveOneControls from '../components/controls/TwoFiveOneControls.jsx';
@@ -66,7 +67,8 @@ export default function PracticePage() {
   const flashTimer = useRef(null);
   const [noteTypes, setNoteTypes] = useState({ natural: true, sharp: false, flat: false });
   const preference = noteTypes.flat && !noteTypes.sharp ? 'FLAT' : noteTypes.sharp && !noteTypes.flat ? 'SHARP' : 'BOTH';
-  const base = useNotePractice(LEGACY_MODE[mode] ?? 'ALL', board, noteTypes);
+  const [weakReview, setWeakReview] = useStoredState('fretmaster.weakReview', false);
+  const base = useNotePractice(LEGACY_MODE[mode] ?? 'ALL', board, noteTypes, weakReview);
   const third = useThirdPractice(board, noteTypes, preference);
   const penta = usePentatonicPractice(preference);
   const chord = useChordTonePractice(noteTypes, preference);
@@ -179,6 +181,10 @@ export default function PracticePage() {
         {isNoteMode && <div className="control-stack"><Section title="연습 범위">
           <Field label="범위"><Segmented ariaLabel="음 찾기 범위" value={mode} onChange={(id) => navigate(`/practice/${id}`)} options={NOTE_MODES.map((id) => ({ value: id, label: MODES.find((item) => item.id === id).label }))} /></Field>
           <StringSelector mode={mode} oneString={base.oneString} setOneString={base.setOneString} multiStrings={base.multiStrings} setMultiStrings={base.setMultiStrings} />
+        </Section>
+        <Section title="약점 복습">
+          <Switch label="약점 위주로 내기" description="틀리거나 오래 걸린 음은 몇 분 안에 다시, 잘 아는 음은 가끔 내요(6→1→6 순차 제외)" checked={weakReview} onChange={setWeakReview} />
+          <button type="button" className="btn btn-dark self-start" onClick={() => { if (window.confirm('맞힌 기록을 모두 지울까요?')) resetReview(); }}>기록 초기화</button>
         </Section></div>}
         {mode === 'direct' && <DirectPracticeControls state={direct} />}
         {mode === 'third' && <ThirdControls state={third} preference={preference} />}
