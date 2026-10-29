@@ -133,11 +133,18 @@ export function Inlay({ shape, material, fret, index }) {
   if (shape === 'none') return null;
   const double = fret === 12 || fret === 24;
   // 도트와 I자(줄을 가로지르는 짧은 막대, 끝이 둥근 알약 모양)는 칸 폭과 상관없이 모양이 같아야 해서 HTML로 그린다.
-  if (shape === 'dot' || shape === 'bar') {
-    const className = `inlay-${shape} inlay-${material} ${double ? 'is-double' : ''}`;
+  if (shape === 'dot') {
+    const className = `inlay-dot inlay-${material}`;
     return double
       ? <><span className={className} style={{ top: '33.33%' }} /><span className={className} style={{ top: '66.67%' }} /></>
       : <span className={className} style={{ top: '50%' }} />;
+  }
+  // I자의 12·24프렛은 같은 길이 막대 두 개를 나란히(줄 방향으로 옆에) 놓는다.
+  if (shape === 'bar') {
+    const className = `inlay-bar inlay-${material}`;
+    return double
+      ? <><span className={className} style={{ left: 'calc(50% - 6px)' }} /><span className={className} style={{ left: 'calc(50% + 6px)' }} /></>
+      : <span className={className} />;
   }
   const common = { fill: fill(material), filter: filterFor(material), stroke: 'rgba(0,0,0,.35)', strokeWidth: 1, vectorEffect: 'non-scaling-stroke' };
   if (shape === 'bird') {

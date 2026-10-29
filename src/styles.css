@@ -120,8 +120,7 @@ button { touch-action: manipulation; }
 .inlay-shape { position: absolute; z-index: 1; left: 16%; width: 68%; top: 12%; height: 76%; pointer-events: none; overflow: visible; filter: drop-shadow(0 0 1px rgba(0,0,0,.45)); }
 .inlay-bird { left: -10%; width: 120%; top: 4%; height: 92%; }
 .inlay-dot { position: absolute; z-index: 1; left: 50%; width: clamp(7px, .8vw, 13px); aspect-ratio: 1; transform: translate(-50%,-50%); border-radius: 999px; pointer-events: none; box-shadow: 0 0 0 1px rgba(0,0,0,.35), inset 0 0 2px rgba(0,0,0,.25); }
-.inlay-bar { position: absolute; z-index: 1; left: 50%; width: clamp(4px, .42vw, 7px); height: 30%; transform: translate(-50%,-50%); border-radius: 999px; pointer-events: none; box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.45); }
-.inlay-bar.is-double { height: 24%; }
+.inlay-bar { position: absolute; z-index: 1; top: 50%; left: 50%; width: clamp(4px, .42vw, 7px); height: 30%; transform: translate(-50%,-50%); border-radius: 999px; pointer-events: none; box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.45); }
 .inlay-bar.inlay-pearl { background: linear-gradient(180deg, #f4efe6, #ddd4ec 30%, #d2ebe4 60%, #f0dcc0); }
 .inlay-bar.inlay-abalone { background: linear-gradient(180deg, #1f8f86, #3a5fc2 30%, #7b4cc0 55%, #1aa37a 80%, #2f7fd0); }
 .inlay-metal { background: repeating-linear-gradient(180deg, rgba(255,255,255,.18) 0 1px, transparent 1px 3px), linear-gradient(90deg, #7b828a, #d9dee3 35%, #f7f9fb 50%, #c3c9cf 65%, #6f767e); }
