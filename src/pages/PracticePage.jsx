@@ -28,6 +28,7 @@ import ThirdControls from '../components/controls/ThirdControls.jsx';
 import PentatonicControls, { PentatonicActions } from '../components/controls/PentatonicControls.jsx';
 import { Field, Section, Segmented, Switch } from '../components/controls/ControlPrimitives.jsx';
 import { resetReview } from '../utils/srs.js';
+import { disconnect as disconnectLog, getConfig as getLogConfig, pendingCount, practiceLog } from '../utils/practiceLog.js';
 import ChordToneControls from '../components/controls/ChordToneControls.jsx';
 import DirectPracticeControls from '../components/controls/DirectPracticeControls.jsx';
 import TwoFiveOneControls from '../components/controls/TwoFiveOneControls.jsx';
@@ -80,12 +81,21 @@ export default function PracticePage() {
   const navMode = navModeFor(mode);
   const isNoteMode = NOTE_MODES.includes(mode);
 
+  // 연습 일지 연동: 연결한 브라우저에서만 시간·정답률을 모은다 (연결 안 됐으면 아무것도 안 함).
+  const logLabel = isNoteMode ? `${navMode.label} · ${modeMeta?.label}` : modeMeta?.label;
+  const logArgs = [mode, navMode.id, logLabel];
+  useEffect(() => () => practiceLog.end(), [mode]);
+  useEffect(() => { if (state.wrongKey) practiceLog.miss(...logArgs); }, [state.wrongKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (mode === 'direct') practiceLog.activity(...logArgs); }, [direct.target]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [logConnected, setLogConnected] = useState(() => Boolean(getLogConfig()));
+
   const press = useCallback((node) => {
+    practiceLog.press(mode, navMode.id, logLabel);
     state.click(node);
     setFlashKey(node.key);
     window.clearTimeout(flashTimer.current);
     flashTimer.current = window.setTimeout(() => setFlashKey(null), 700);
-  }, [state]);
+  }, [state, mode, navMode.id, logLabel]);
   const onNodeClick = useCallback((node) => {
     // 맞든 틀리든 누른 칸의 소리를 들려준다.
     if (soundOn) playFret(node.string, node.fret);
@@ -190,6 +200,11 @@ export default function PracticePage() {
         {isTwoFive && <TwoFiveOneControls state={twoFive} />}
       </section>
       {micMode && <section className="card flex flex-col gap-4 p-5"><MicControls mic={mic} device={micDevice} setDevice={setMicDevice} /></section>}
+      {logConnected && <section className="card flex flex-col gap-3 p-5">
+        <h3 className="text-lg font-bold text-ink">연습 일지</h3>
+        <p className="text-sm text-ink-soft">연결됨 · 이 브라우저에서 연습한 시간과 정답률을 일지로 보내요{pendingCount() ? ` (보낼 기록 ${pendingCount()}개)` : ''}</p>
+        <button type="button" className="btn btn-dark self-start" onClick={() => { if (window.confirm('연습 일지 연결을 끊을까요?')) { disconnectLog(); setLogConnected(false); } }}>연결 끊기</button>
+      </section>}
       {mode !== 'direct' && <section className="card flex flex-col gap-4 p-5">
         <h3 className="text-lg font-bold text-ink">공통 설정</h3>
         <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} keepMarks={keepMarks} setKeepMarks={setKeepMarks} soundOn={soundOn} setSoundOn={setSoundOn} skin={skin} setSkin={setSkin} theme={theme} setTheme={setTheme} view={view} setView={setView} />
