@@ -220,14 +220,3 @@ button { touch-action: manipulation; }
 /* 보기 범위를 좁혀 지판 중간이 잘린 쪽은 모서리를 각지게 */
 .fretboard.cut-left { border-top-left-radius: 0; border-bottom-left-radius: 0; }
 .fretboard.cut-right { border-top-right-radius: 0; border-bottom-right-radius: 0; }
-
-/* 기타 전체 보기: 무대 크기를 칸 안에 비율 그대로 맞추고, 넥 자리에 지판을 겹친다 */
-.fretboard-shell.is-full { container-type: size; padding: 10px; }
-.guitar-stage { position: relative; width: min(100cqw, calc(100cqh * 1000 / 340)); aspect-ratio: 1000 / 340; margin: auto; }
-.guitar-art { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 6px 10px rgba(0,0,0,.28)); }
-.guitar-neck { position: absolute; }
-.guitar-neck .fretboard { height: 100%; min-height: 0; border-block-width: 2px; box-shadow: 0 0 4px rgba(0,0,0,.35); }
-.is-full .note-node { width: clamp(10px, 1.45vw, 24px); height: clamp(10px, 1.45vw, 24px); font-size: clamp(6px, .6vw, 10px); }
-.is-full .fret-number { top: -18px; font-size: clamp(7px, .6vw, 10px); color: var(--color-ink-soft); }
-.is-full .side-dots, .is-full.with-numbers .side-dots { display: none; }
-.is-full .inlay-dot { width: clamp(5px, .55vw, 9px); }
