@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { NAV_MODES } from '../constants/modes.js';
 import Dropdown from './controls/Dropdown.jsx';
+import MicButton from './MicButton.jsx';
 
-export default function AppBar({ navMode, mobile = false, onHelp, onSettings }) {
+export default function AppBar({ navMode, mobile = false, mic = null, onHelp, onSettings }) {
   const navigate = useNavigate();
   const change = (id) => navigate(`/practice/${id === 'notes' ? 'all' : id}`);
   return (
@@ -12,7 +13,9 @@ export default function AppBar({ navMode, mobile = false, onHelp, onSettings }) 
         {NAV_MODES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
       </Dropdown>
       {!mobile && <span className="hidden min-w-0 truncate text-sm text-ink-soft lg:block">{navMode.summary}</span>}
-      <div className="ml-auto flex shrink-0 gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+        {mic?.error && <span className="hidden max-w-72 text-xs leading-snug text-danger md:block">{mic.error}</span>}
+        {mic && <MicButton mic={mic} mobile={mobile} />}
         <button type="button" onClick={onHelp} className="btn btn-outline">{mobile ? '?' : '사용법'}</button>
         <button type="button" onClick={onSettings} className="btn btn-primary">설정</button>
       </div>

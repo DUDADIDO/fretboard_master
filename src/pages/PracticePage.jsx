@@ -1,11 +1,12 @@
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MODES, LEGACY_MODE, NOTE_MODES, navModeFor } from '../constants/modes.js';
 import { createFretboard, BASIC_MAX_FRET } from '../utils/fretboard.js';
-import { noteLabel, spellingPreference } from '../utils/notes.js';
+import { getPitchClass, noteLabel, spellingPreference } from '../utils/notes.js';
 import { useMediaQuery } from '../hooks/useMediaQuery.js';
 import { useStoredState } from '../hooks/useStoredState.js';
-import { playFret } from '../utils/guitarSound.js';
+import { useMicPitch } from '../hooks/useMicPitch.js';
+import { fretSemitone, playFret } from '../utils/guitarSound.js';
 import { useNotePractice } from '../features/notePractice/useNotePractice.js';
 import { useThirdPractice } from '../features/thirdPractice/useThirdPractice.js';
 import { usePentatonicPractice } from '../features/pentatonic/usePentatonicPractice.js';
@@ -28,6 +29,7 @@ import { Field, Section, Segmented } from '../components/controls/ControlPrimiti
 import ChordToneControls from '../components/controls/ChordToneControls.jsx';
 import DirectPracticeControls from '../components/controls/DirectPracticeControls.jsx';
 import TwoFiveOneControls from '../components/controls/TwoFiveOneControls.jsx';
+import MicControls from '../components/controls/MicControls.jsx';
 import ChordDegreeProgress from '../components/ChordDegreeProgress.jsx';
 import DirectPracticePanel from '../components/DirectPracticePanel.jsx';
 import TwoFiveOneProgress from '../components/TwoFiveOneProgress.jsx';
@@ -66,14 +68,44 @@ export default function PracticePage() {
   const navMode = navModeFor(mode);
   const isNoteMode = NOTE_MODES.includes(mode);
 
-  const onNodeClick = useCallback((node) => {
-    // 맞든 틀리든 누른 칸의 소리를 들려준다.
-    if (soundOn) playFret(node.string, node.fret);
+  const press = useCallback((node) => {
     state.click(node);
     setFlashKey(node.key);
     window.clearTimeout(flashTimer.current);
     flashTimer.current = window.setTimeout(() => setFlashKey(null), 700);
-  }, [soundOn, state]);
+  }, [state]);
+  const onNodeClick = useCallback((node) => {
+    // 맞든 틀리든 누른 칸의 소리를 들려준다.
+    if (soundOn) playFret(node.string, node.fret);
+    press(node);
+  }, [press, soundOn]);
+
+  // 마이크: 실제 기타로 친 음을 듣고 지금 차례의 칸을 누른 것처럼 처리한다.
+  // 어느 줄에서 쳤는지는 소리로 알 수 없어서, 차례가 정해진 모드(직접 연습·ii-V-I 훑기·1줄 코드톤)에서만 쓴다.
+  // 화음 배음 때문에 옥타브를 헷갈릴 수 있어 같은 음이름이면 한 옥타브 차이까지 받아준다.
+  const [micDevice, setMicDevice] = useStoredState('fretmaster.micDevice', '');
+  const micMode = mode === 'direct' || mode === 'chord-tone' || (isTwoFive && twoFive.sweep);
+  const samePitchClass = (a, b) => (((a - b) % 12) + 12) % 12 === 0;
+  const onHeard = (semitone) => {
+    if (mode === 'direct') {
+      if (samePitchClass(semitone + 4, getPitchClass(direct.target))) direct.next();
+      return;
+    }
+    if (isTwoFive && twoFive.sweep) {
+      const expected = twoFive.tones[twoFive.step];
+      if (!expected || twoFive.complete) return;
+      const target = fretSemitone(expected.string, expected.fret);
+      if (samePitchClass(semitone, target) && Math.abs(semitone - target) <= 12) press(board.find((node) => node.key === expected.key));
+      return;
+    }
+    if (mode === 'chord-tone') {
+      const candidates = board.filter((node) => node.string === chord.string && !chord.found.has(node.key) && samePitchClass(fretSemitone(node.string, node.fret), semitone));
+      const node = candidates.sort((a, b) => Math.abs(fretSemitone(a.string, a.fret) - semitone) - Math.abs(fretSemitone(b.string, b.fret) - semitone))[0];
+      if (node) press(node);
+    }
+  };
+  const mic = useMicPitch(onHeard, micDevice);
+  useEffect(() => { if (!micMode) mic.stop(); }, [micMode]); // eslint-disable-line react-hooks/exhaustive-deps
   const getModeNodeView = useCallback((node) => {
     const wrong = state.wrongKey === node.key;
     if (mode === 'third') {
@@ -126,6 +158,7 @@ export default function PracticePage() {
         {mode === 'chord-tone' && <ChordToneControls state={chord} preference={preference} />}
         {isTwoFive && <TwoFiveOneControls state={twoFive} />}
       </section>
+      {micMode && <section className="card flex flex-col gap-4 p-5"><MicControls mic={mic} device={micDevice} setDevice={setMicDevice} /></section>}
       {mode !== 'direct' && <section className="card flex flex-col gap-4 p-5">
         <h3 className="text-lg font-bold text-ink">공통 설정</h3>
         <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} keepMarks={keepMarks} setKeepMarks={setKeepMarks} soundOn={soundOn} setSoundOn={setSoundOn} skin={skin} setSkin={setSkin} />
@@ -135,13 +168,13 @@ export default function PracticePage() {
   const controls = mode === 'pentatonic' ? <section className="control-panel card"><PentatonicActions state={penta} /></section> : null;
   const headerStatus = mode === 'chord-tone' ? <ChordDegreeProgress degrees={chord.tones.map((tone) => tone.degree)} step={chord.step} /> : isTwoFive ? <TwoFiveOneProgress progression={twoFive.activeChords} chordIndex={twoFive.chordIndex} degrees={twoFive.tones.map((tone) => tone.degree)} step={twoFive.step} total={twoFive.sweep ? twoFive.tones.length : 0} /> : state.status;
   const header = <QuizHeader eyebrow={isNoteMode ? `${navMode.label} · ${modeMeta.label}` : modeMeta.label} target={target} description={state.description} status={headerStatus} />;
-  const fretboard = mode === 'direct' ? <DirectPracticePanel state={direct} /> : <Fretboard board={board} showFrets={showFrets} skin={skin} activeStrings={state.activeStrings} getNodeView={getNodeView} onNodeClick={onNodeClick} />;
+  const fretboard = mode === 'direct' ? <DirectPracticePanel state={direct} mic={mic} /> : <Fretboard board={board} showFrets={showFrets} skin={skin} activeStrings={state.activeStrings} getNodeView={getNodeView} onNodeClick={onNodeClick} />;
 
   if (!valid) return <Navigate to="/practice/all" replace />;
   const Layout = isMobile ? MobileLayout : DesktopLayout;
   return (
     <>
-      <Layout navigation={<AppBar navMode={navMode} mobile={isMobile} onHelp={() => setHelpOpen(true)} onSettings={() => setSettingsOpen(true)} />} header={header} controls={controls} board={fretboard} />
+      <Layout navigation={<AppBar navMode={navMode} mobile={isMobile} mic={micMode ? mic : null} onHelp={() => setHelpOpen(true)} onSettings={() => setSettingsOpen(true)} />} header={header} controls={controls} board={fretboard} />
       <Overlay open={settingsOpen} onClose={() => setSettingsOpen(false)} title="설정">{settings}</Overlay>
       <HelpDialog open={helpOpen} navMode={navMode} firstVisit={!seenGuide} onClose={() => { setHelpOpen(false); setSeenGuide(true); }} />
       {mode !== 'direct' && <RotateDevice />}

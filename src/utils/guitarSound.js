@@ -6,6 +6,11 @@ const E2 = 440 * 2 ** (-29 / 12);
 // 개방현 음높이(E2 기준 반음). 인덱스 = 줄 번호
 const OPEN_SEMITONES = [null, 24, 19, 15, 10, 5, 0];
 
+// E2(6번줄 개방현)=0 기준 반음 수
+export function fretSemitone(string, fret) {
+  return OPEN_SEMITONES[string] + fret;
+}
+
 export function fretFrequency(string, fret) {
   return E2 * 2 ** ((OPEN_SEMITONES[string] + fret) / 12);
 }
