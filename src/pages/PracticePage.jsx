@@ -138,13 +138,13 @@ export default function PracticePage() {
       const foundIndex = [...chord.found].indexOf(node.key);
       const correct = foundIndex >= 0;
       const degree = correct ? chord.tones[foundIndex]?.degree : '';
-      const tone = degree === '1' ? 'tone-root' : degree?.includes('3') ? 'tone-third' : degree === '5' ? 'tone-fifth' : 'tone-seventh';
+      const tone = degree === '1' ? 'tone-root' : degree?.includes('3') ? 'tone-third' : degree.includes('5') ? 'tone-fifth' : 'tone-seventh';
       return { disabled: node.string !== chord.string, wrong, correct, tone, label: wrong ? noteLabel(node.note, spellingPreference(chord.root, preference)) : degree };
     }
     if (isTwoFive) {
       const hit = twoFive.found.find((item) => item.key === node.key);
       const degree = hit?.degree ?? '';
-      const tone = degree === '1' ? 'tone-root' : degree.includes('3') ? 'tone-third' : degree === '5' ? 'tone-fifth' : 'tone-seventh';
+      const tone = degree === '1' ? 'tone-root' : degree.includes('3') ? 'tone-third' : degree.includes('5') ? 'tone-fifth' : 'tone-seventh';
       return { disabled: !twoFive.activeStrings.includes(node.string) || twoFive.complete, wrong, correct: Boolean(hit), tone, label: wrong ? noteLabel(node.note, spellingPreference(twoFive.key, preference)) : degree };
     }
     return { disabled: node.fret > BASIC_MAX_FRET || !base.activeStrings.includes(node.string), wrong, correct: base.found.has(node.key), tone: 'tone-note', label: wrong ? noteLabel(node.note, spellingPreference(base.target, preference)) : base.found.has(node.key) ? noteLabel(base.target, preference) : '' };

@@ -1,4 +1,4 @@
-import { CHART_KEYS, POSITION_SHIFTS, SWEEP_DIRECTIONS } from '../../utils/twoFiveOne.js';
+import { CHART_KEYS, POSITION_SHIFTS, PROGRESSION_LABELS, SWEEP_DIRECTIONS } from '../../utils/twoFiveOne.js';
 import { CHORD_ROMANS } from '../../features/twoFiveOne/useTwoFiveOnePractice.js';
 import ChipGroup from './ChipGroup.jsx';
 import { Field, Section, Segmented, Select, Switch } from './ControlPrimitives.jsx';
@@ -27,24 +27,25 @@ export default function TwoFiveOneControls({ state }) {
       </Section>
 
       <Section title="출제 범위">
+        <Field label="진행"><Segmented ariaLabel="진행 종류" value={state.progressionMode} onChange={state.setProgressionMode} options={Object.entries(PROGRESSION_LABELS).map(([value, label]) => ({ value, label }))} /></Field>
         <Field label="출제 코드">
           <ChipGroup label="출제 코드" bulk={false} value={state.chordFilter} onChange={state.setChordFilter}
             options={CHORD_ROMANS.map((roman) => {
               const chord = state.progression.find((item) => item.roman === roman);
-              return { value: roman, label: `${roman} · ${chord.symbol}` };
+              return { value: roman, label: `${chord.label} · ${chord.symbol}` };
             })} />
         </Field>
         <Field label="키 순서"><Segmented ariaLabel="키 진행 순서" value={state.keyOrder} onChange={state.setKeyOrder} options={[{ value: 'CHART', label: '차트 순서 (4도)' }, { value: 'FIXED', label: '한 키 반복' }, { value: 'RANDOM', label: '랜덤' }]} /></Field>
-        {state.keyOrder !== 'RANDOM' && <Field label={state.keyOrder === 'FIXED' ? '키' : '시작 키'}><Select label="ii-V-I 키" value={state.key} onChange={state.setKey}>{CHART_KEYS.filter((key) => !state.usesPool || state.keyPool.includes(key)).map((key) => <option key={key} value={key}>{key} major</option>)}</Select></Field>}
+        {state.keyOrder !== 'RANDOM' && <Field label={state.keyOrder === 'FIXED' ? '키' : '시작 키'}><Select label="ii-V-I 키" value={state.key} onChange={state.setKey}>{CHART_KEYS.filter((key) => !state.usesPool || state.keyPool.includes(key)).map((key) => <option key={key} value={key}>{state.keyLabel(key)}</option>)}</Select></Field>}
         {state.usesPool && <Field label="출제 키"><ChipGroup label="출제 키" value={state.keyPool} onChange={state.setKeyPool} options={CHART_KEYS.map((key) => ({ value: key, label: key }))} /></Field>}
       </Section>
 
       <Section title="도움">
         <Switch label="음이름 힌트" description="문제 설명에 찾을 음 이름(예: D)을 같이 보여줘요" checked={state.showNames} onChange={state.setShowNames} />
-        <details className="settings-details"><summary>{state.key} 키 코드톤 표</summary>
+        <details className="settings-details"><summary>{state.keyLabel(state.key)} 코드톤 표</summary>
           <table className="mt-2 w-full text-left text-xs">
             <thead className="text-ink-soft"><tr><th className="py-1">코드</th><th>근음</th><th>3음</th><th>5음</th><th>7음</th></tr></thead>
-            <tbody>{state.progression.map((chord) => <tr key={chord.roman} className={chord.roman === state.chord.roman ? 'font-semibold text-brand' : 'text-ink'}><td className="py-1 font-bold">{chord.roman} {chord.symbol}</td>{chord.tones.map((tone) => <td key={tone.degree}>{tone.name} <span className="text-ink-soft">({tone.degree})</span></td>)}</tr>)}</tbody>
+            <tbody>{state.progression.map((chord) => <tr key={chord.roman} className={chord.roman === state.chord.roman ? 'font-semibold text-brand' : 'text-ink'}><td className="py-1 font-bold">{chord.label} {chord.symbol}</td>{chord.tones.map((tone) => <td key={tone.degree}>{tone.name} <span className="text-ink-soft">({tone.degree})</span></td>)}</tr>)}</tbody>
           </table>
         </details>
         {!state.sweep && <details className="settings-details"><summary>패턴 힌트</summary><p className="mt-2 text-ink">{state.hint}</p></details>}

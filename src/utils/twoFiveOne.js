@@ -1,46 +1,47 @@
+import { Note } from 'tonal';
 import { NOTES } from './notes.js';
 
 // 차트(II-V-I in 12 Major Keys)와 같은 순서·표기. 4도씩 이동한다.
 export const CHART_KEYS = ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'B', 'E', 'A', 'D', 'G'];
 
-const LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
-const NATURAL_PC = [0, 2, 4, 5, 7, 9, 11];
+// 도수 → 인터벌. 철자는 tonal이 글자 기준으로 맞춘다(Gb 키에서 B 대신 Cb 등).
+const INTERVALS = { 1: '1P', 2: '2M', b3: '3m', 3: '3M', 4: '4P', b5: '5d', 5: '5P', 6: '6M', b7: '7m', 7: '7M' };
 
-// 도수 → [글자 간격, 반음]. 글자 기준으로 철자를 맞춰 Gb 키에서 B 대신 Cb을 쓴다.
-const DEGREES = { 1: [0, 0], 2: [1, 2], 3: [2, 4], b3: [2, 3], 4: [3, 5], 5: [4, 7], 6: [5, 9], 7: [6, 11], b7: [6, 10] };
-
-export const TWO_FIVE_ONE_CHORDS = [
-  { roman: 'ii', degree: 2, quality: 'MIN7', suffix: 'm7', degrees: ['1', 'b3', '5', 'b7'] },
-  { roman: 'V', degree: 5, quality: 'DOM7', suffix: '7', degrees: ['1', '3', '5', 'b7'] },
-  { roman: 'I', degree: 1, quality: 'MAJ7', suffix: 'Δ7', degrees: ['1', '3', '5', '7'] },
-];
+export const PROGRESSIONS = {
+  MAJOR: [
+    { roman: 'ii', label: 'ii', degree: 2, quality: 'MIN7', suffix: 'm7', degrees: ['1', 'b3', '5', 'b7'] },
+    { roman: 'V', label: 'V', degree: 5, quality: 'DOM7', suffix: '7', degrees: ['1', '3', '5', 'b7'] },
+    { roman: 'I', label: 'I', degree: 1, quality: 'MAJ7', suffix: 'Δ7', degrees: ['1', '3', '5', '7'] },
+  ],
+  // 마이너 ii-V-i: 하프 디미니시드 → 도미넌트 → 마이너 7
+  MINOR: [
+    { roman: 'ii', label: 'iiø', degree: 2, quality: 'HALFDIM', suffix: 'm7♭5', degrees: ['1', 'b3', 'b5', 'b7'] },
+    { roman: 'V', label: 'V', degree: 5, quality: 'DOM7', suffix: '7', degrees: ['1', '3', '5', 'b7'] },
+    { roman: 'I', label: 'i', degree: 1, quality: 'MIN7', suffix: 'm7', degrees: ['1', 'b3', '5', 'b7'] },
+  ],
+};
+export const PROGRESSION_LABELS = { MAJOR: '메이저 ii-V-I', MINOR: '마이너 iiø-V-i' };
+export const TWO_FIVE_ONE_CHORDS = PROGRESSIONS.MAJOR;
 
 export const GUIDE_DEGREES = ['b3', '3', 'b7', '7'];
 
-function parseNote(name) {
-  const letter = LETTERS.indexOf(name[0]);
-  const accidentals = name.slice(1);
-  const offset = [...accidentals].reduce((sum, char) => sum + (char === '#' ? 1 : char === 'b' ? -1 : 0), 0);
-  return { letter, pc: (NATURAL_PC[letter] + offset + 12) % 12 };
-}
+// 마이너에서는 Db·Gb 마이너 대신 많이 쓰는 C#·F# 마이너로 적는다(Ebb 같은 겹내림표를 피함).
+const MINOR_SPELLING = { Db: 'C#', Gb: 'F#' };
+export const keyLabel = (key, mode = 'MAJOR') => (mode === 'MINOR' ? `${MINOR_SPELLING[key] ?? key} minor` : `${key} major`);
 
 export function spellDegree(root, degree) {
-  const [steps, semitones] = DEGREES[degree];
-  const { letter, pc } = parseNote(root);
-  const targetLetter = (letter + steps) % 7;
-  const targetPc = (pc + semitones) % 12;
-  const diff = ((targetPc - NATURAL_PC[targetLetter] + 18) % 12) - 6;
-  return LETTERS[targetLetter] + (diff > 0 ? '#'.repeat(diff) : 'b'.repeat(-diff));
+  return Note.transpose(root, INTERVALS[degree]);
 }
 
 // 철자 표기(Cb, E# 등)를 지판 매칭용 샵 기준 pitch class 이름으로 바꾼다.
 export function pitchName(name) {
-  return NOTES[parseNote(name).pc];
+  return NOTES[Note.chroma(name)];
 }
 
-export function getTwoFiveOne(key) {
-  return TWO_FIVE_ONE_CHORDS.map((chord) => {
-    const root = spellDegree(key, chord.degree);
+export function getTwoFiveOne(key, mode = 'MAJOR') {
+  const tonic = mode === 'MINOR' ? (MINOR_SPELLING[key] ?? key) : key;
+  return PROGRESSIONS[mode].map((chord) => {
+    const root = spellDegree(tonic, chord.degree);
     return {
       ...chord,
       root,

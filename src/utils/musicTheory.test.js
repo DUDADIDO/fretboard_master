@@ -4,7 +4,7 @@ import { fretFrequency } from './guitarSound.js';
 import { getChordTones } from './chords.js';
 import { getIntervalPattern } from './intervals.js';
 import { getPentatonicTargets } from './pentatonic.js';
-import { CHART_KEYS, getHandPath, SEVEN_ONE_PER_STRING, getTwoFiveOne, nextPositionOffset } from './twoFiveOne.js';
+import { CHART_KEYS, getHandPath, SEVEN_ONE_PER_STRING, getTwoFiveOne, keyLabel, nextPositionOffset } from './twoFiveOne.js';
 import { ALL_NOTE_SPELLINGS, canonicalNote, getNotePool, noteLabel, selectableNotes, spellingPreference } from './notes.js';
 
 describe('표준 튜닝과 지판', () => {
@@ -158,6 +158,29 @@ describe('6번줄은 루트만, 그 뒤 (3·5) (7·1): b7·1을 같은 줄에서
         if (index) expect(pitch(item)).toBeGreaterThan(pitch(path[index - 1]));
         if (item.degree === '1' && index) expect(path[index - 1].string).toBe(item.string);
       });
+    }
+  });
+});
+
+describe('마이너 ii-V-i', () => {
+  it('C 마이너: Dm7♭5 → G7 → Cm7', () => {
+    expect(getTwoFiveOne('C', 'MINOR').map((chord) => `${chord.symbol}:${chord.tones.map((tone) => tone.name).join(' ')}`)).toEqual([
+      'Dm7♭5:D F Ab C', 'G7:G B D F', 'Cm7:C Eb G Bb',
+    ]);
+  });
+
+  it('Db·Gb 마이너는 겹내림표 없이 C#·F# 마이너로 적는다', () => {
+    expect(keyLabel('Db', 'MINOR')).toBe('C# minor');
+    expect(getTwoFiveOne('Gb', 'MINOR').map((chord) => chord.symbol)).toEqual(['G#m7♭5', 'C#7', 'F#m7']);
+    const names = CHART_KEYS.flatMap((key) => getTwoFiveOne(key, 'MINOR').flatMap((chord) => chord.tones.map((tone) => tone.name)));
+    expect(names.filter((name) => /bb|##/.test(name))).toEqual([]);
+  });
+
+  it.each(CHART_KEYS.flatMap((key) => getTwoFiveOne(key, 'MINOR').map((chord) => [`${key} ${chord.symbol}`, chord])))('%s: 두 훑기 경로 모두 1357 순환', (_, chord) => {
+    for (const perString of [undefined, SEVEN_ONE_PER_STRING]) {
+      const path = getHandPath(chord.tones, 7, 'UP', perString);
+      expect(path.length).toBeGreaterThan(10);
+      path.forEach((item, index) => expect(item.degree).toBe(chord.degrees[index % 4]));
     }
   });
 });
