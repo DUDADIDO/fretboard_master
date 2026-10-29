@@ -71,7 +71,7 @@ export default function ChipGroup({ options, value, onChange, label, min = 1, bu
           return (
             <button key={option.value} type="button" data-chip={index} aria-pressed={active}
               onClick={(event) => { if (event.detail === 0) toggle(option.value); }}
-              className={`min-h-9 min-w-10 rounded-full border px-3.5 text-[13px] font-semibold transition-colors duration-150 ${active ? 'border-accent bg-accent text-white' : 'border-line bg-white text-ink-soft hover:border-ink-soft hover:text-ink'} ${marked ? 'ring-2 ring-accent ring-offset-2 ring-offset-canvas' : ''}`}>
+              className={`min-h-9 min-w-10 rounded-full border px-3.5 text-[13px] font-semibold transition-colors duration-150 ${active ? 'border-accent bg-accent text-white' : 'border-line bg-surface text-ink-soft hover:border-ink-soft hover:text-ink'} ${marked ? 'ring-2 ring-accent ring-offset-2 ring-offset-canvas' : ''}`}>
               {option.label}
             </button>
           );

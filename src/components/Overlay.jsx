@@ -19,7 +19,7 @@ export default function Overlay({ open, onClose, title, variant = 'drawer', chil
           <button type="button" onClick={onClose} aria-label="닫기" className="btn btn-dark min-h-9 px-3">닫기</button>
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">{children}</div>
-        {footer && <footer className="border-t border-black/[0.06] px-5 py-3">{footer}</footer>}
+        {footer && <footer className="border-t border-ink/10 px-5 py-3">{footer}</footer>}
       </section>
     </div>
   );

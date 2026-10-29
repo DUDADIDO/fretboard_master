@@ -19,6 +19,27 @@
   --color-ink-soft: rgba(0, 0, 0, .58);
   --color-line: #d6dbde;
   --color-danger: #c82014;
+  --color-surface: #ffffff;
+}
+
+/* 다크 모드: 토큰만 바꿔서 화면 전체가 따라오게 한다. 지판·인레이는 원래 색 그대로 */
+@custom-variant dark (&:where(.dark, .dark *));
+html.dark {
+  color-scheme: dark;
+  --color-canvas: #101412;
+  --color-ceramic: #232a26;
+  --color-cool: #181d1a;
+  --color-surface: #1a201d;
+  --color-brand: #5fcf9c;
+  --color-accent: #1a8c5c;
+  --color-house: #0e1f19;
+  --color-uplift: #2b5148;
+  --color-mint: #173b2e;
+  --color-gold-lightest: #2a2418;
+  --color-ink: rgba(255, 255, 255, .9);
+  --color-ink-soft: rgba(255, 255, 255, .6);
+  --color-line: #39423d;
+  --tone-third-ink: #f0b56a; --tone-fifth-ink: #8fbfee; --tone-seventh-ink: #cfa4f0;
 }
 
 /* SUIT는 화살표(→)를 '>'처럼 그려서 화살표만 시스템 글꼴로 돌린다. */
@@ -28,7 +49,7 @@
   unicode-range: U+2190-21FF;
 }
 
-:root { color-scheme: light; background: var(--color-canvas); font-family: var(--font-sans); font-weight: 500; letter-spacing: -0.01em; -webkit-font-smoothing: antialiased; }
+:root { --tone-third-ink: #8a520c; --tone-fifth-ink: #215283; --tone-seventh-ink: #5e2f83; color-scheme: light; background: var(--color-canvas); font-family: var(--font-sans); font-weight: 500; letter-spacing: -0.01em; -webkit-font-smoothing: antialiased; }
 * { box-sizing: border-box; }
 html, body, #root { min-width: 320px; min-height: 100%; margin: 0; }
 body { min-height: 100dvh; background: var(--color-canvas); color: var(--color-ink); word-break: keep-all; overflow-wrap: anywhere; }
@@ -36,7 +57,7 @@ button, select { font: inherit; letter-spacing: inherit; }
 button { touch-action: manipulation; }
 
 /* 카드: 낮은 알파 그림자 2겹 */
-.card { border-radius: 12px; background: #fff; box-shadow: 0 0 .5px rgba(0,0,0,.14), 0 1px 1px rgba(0,0,0,.24); }
+.card { border-radius: 12px; background: var(--color-surface); box-shadow: 0 0 .5px rgba(0,0,0,.14), 0 1px 1px rgba(0,0,0,.24); }
 
 /* 버튼: 50px 필 + 누를 때 scale(.95) */
 .btn { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; gap: .4rem; border: 1px solid transparent; border-radius: 50px; padding: 7px 16px; font-size: 14px; font-weight: 600; line-height: 1.2; white-space: nowrap; transition: all .2s ease; cursor: pointer; }
@@ -47,7 +68,12 @@ button { touch-action: manipulation; }
 .btn-outline { border-color: var(--color-accent); background: transparent; color: var(--color-accent); }
 .btn-outline:hover { background: rgba(212,233,226,.45); }
 .btn-dark { border-color: var(--color-ink); background: transparent; color: var(--color-ink); }
-.btn-dark:hover { background: rgba(0,0,0,.04); }
+.btn-dark:hover { background: color-mix(in srgb, var(--color-ink) 6%, transparent); }
+
+/* 코드톤 진행 칩 */
+.degree-third { border-color: rgba(184,110,18,.3); background: rgba(184,110,18,.14); color: var(--tone-third-ink); }
+.degree-fifth { border-color: rgba(44,106,166,.3); background: rgba(44,106,166,.14); color: var(--tone-fifth-ink); }
+.degree-seventh { border-color: rgba(122,63,168,.3); background: rgba(122,63,168,.14); color: var(--tone-seventh-ink); }
 
 /* 출제 범위 칩 영역의 드래그 선택 박스 */
 .selection-box { position: absolute; z-index: 5; pointer-events: none; border: 1.5px solid var(--color-accent); border-radius: 4px; background: rgba(0,117,74,.12); box-shadow: 0 0 0 1px rgba(255,255,255,.6) inset; }
@@ -69,7 +95,7 @@ button { touch-action: manipulation; }
   align-items: center;
   overflow: hidden;
   border-radius: 12px;
-  background: #fff;
+  background: var(--color-surface);
   padding: 42px 14px 18px;
   box-shadow: 0 0 .5px rgba(0,0,0,.14), 0 1px 1px rgba(0,0,0,.24);
 }
@@ -118,7 +144,7 @@ button { touch-action: manipulation; }
 .side-dots { position: absolute; top: -25px; left: 50%; display: flex; gap: 3px; transform: translate(-50%,-50%); pointer-events: none; transition: top .25s ease; }
 .with-numbers .side-dots { top: -42px; }
 .side-dot { width: 7px; height: 7px; border-radius: 999px; background: radial-gradient(circle at 35% 30%, #fff 0 25%, #ddd8cd 60%, #a69e90); box-shadow: 0 0 0 1px rgba(0,0,0,.4); }
-.fret-number { position: absolute; top: -31px; left: 50%; transform: translateX(-50%); color: rgba(0,0,0,.45); font-size: clamp(8px, .72vw, 11px); font-weight: 700; white-space: nowrap; }
+.fret-number { position: absolute; top: -31px; left: 50%; transform: translateX(-50%); color: var(--color-ink-soft); font-size: clamp(8px, .72vw, 11px); font-weight: 700; white-space: nowrap; }
 .skin-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 .wood-layer { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; pointer-events: none; }
 /* 니켈 프렛 와이어: 가운데가 밝은 금속 띠 */

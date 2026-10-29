@@ -1,8 +1,8 @@
 const TONES = {
   root: 'border-brand/30 bg-mint text-brand',
-  third: 'border-[#b86e12]/30 bg-[#fbeedd] text-[#8a520c]',
-  fifth: 'border-[#2c6aa6]/30 bg-[#e3eef8] text-[#215283]',
-  seventh: 'border-[#7a3fa8]/30 bg-[#f1e7f8] text-[#5e2f83]',
+  third: 'degree-third',
+  fifth: 'degree-fifth',
+  seventh: 'degree-seventh',
 };
 
 export default function ChordDegreeProgress({ degrees, step }) {

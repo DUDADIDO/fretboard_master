@@ -13,7 +13,7 @@ export function Field({ label, children }) {
 }
 
 export function Chip({ active, onClick, children, disabled }) {
-  return <button type="button" aria-pressed={active} disabled={disabled} onClick={onClick} className={`min-h-9 rounded-full border px-4 text-[13px] font-semibold transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${active ? 'border-accent bg-mint text-brand' : 'border-line bg-white text-ink-soft hover:border-ink-soft hover:text-ink'}`}>{children}</button>;
+  return <button type="button" aria-pressed={active} disabled={disabled} onClick={onClick} className={`min-h-9 rounded-full border px-4 text-[13px] font-semibold transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${active ? 'border-accent bg-mint text-brand' : 'border-line bg-surface text-ink-soft hover:border-ink-soft hover:text-ink'}`}>{children}</button>;
 }
 
 export function Select({ value, onChange, children, label, disabled = false }) {
@@ -23,7 +23,7 @@ export function Select({ value, onChange, children, label, disabled = false }) {
 // 설정 패널 안의 묶음. 제목 아래에 항목을 세로로 쌓고 묶음끼리는 가는 선으로 나눈다.
 export function Section({ title, children }) {
   return (
-    <section className="flex flex-col gap-4 border-t border-black/[0.06] pt-4 first:border-t-0 first:pt-0">
+    <section className="flex flex-col gap-4 border-t border-ink/10 pt-4 first:border-t-0 first:pt-0">
       <h4 className="text-xs font-bold tracking-[0.02em] text-brand">{title}</h4>
       {children}
     </section>

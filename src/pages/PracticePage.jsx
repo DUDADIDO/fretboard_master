@@ -6,6 +6,7 @@ import { getPitchClass, noteLabel, spellingPreference } from '../utils/notes.js'
 import { useMediaQuery } from '../hooks/useMediaQuery.js';
 import { useStoredState } from '../hooks/useStoredState.js';
 import { useMicPitch } from '../hooks/useMicPitch.js';
+import { useTheme } from '../hooks/useTheme.js';
 import { fretSemitone, playFret } from '../utils/guitarSound.js';
 import { useNotePractice } from '../features/notePractice/useNotePractice.js';
 import { useThirdPractice } from '../features/thirdPractice/useThirdPractice.js';
@@ -48,6 +49,7 @@ export default function PracticePage() {
   const [showFrets, setShowFrets] = useState(true);
   const [keepMarks, setKeepMarks] = useStoredState('fretmaster.keepMarks', true);
   const [soundOn, setSoundOn] = useStoredState('fretmaster.sound', true);
+  const [theme, setTheme] = useTheme();
   const [skin, setSkin] = useStoredState('fretmaster.skin', { wood: 'rosewood', inlay: 'dot', material: 'pearl' });
   const [flashKey, setFlashKey] = useState(null);
   const flashTimer = useRef(null);
@@ -161,7 +163,7 @@ export default function PracticePage() {
       {micMode && <section className="card flex flex-col gap-4 p-5"><MicControls mic={mic} device={micDevice} setDevice={setMicDevice} /></section>}
       {mode !== 'direct' && <section className="card flex flex-col gap-4 p-5">
         <h3 className="text-lg font-bold text-ink">공통 설정</h3>
-        <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} keepMarks={keepMarks} setKeepMarks={setKeepMarks} soundOn={soundOn} setSoundOn={setSoundOn} skin={skin} setSkin={setSkin} />
+        <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} keepMarks={keepMarks} setKeepMarks={setKeepMarks} soundOn={soundOn} setSoundOn={setSoundOn} skin={skin} setSkin={setSkin} theme={theme} setTheme={setTheme} />
       </section>}
     </div>
   );

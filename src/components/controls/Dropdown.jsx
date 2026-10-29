@@ -64,7 +64,7 @@ export default function Dropdown({ value, onChange, children, label, disabled = 
       <button ref={buttonRef} type="button" aria-label={label} aria-haspopup="listbox" aria-expanded={open} aria-controls={open ? listId : undefined} disabled={disabled}
         onClick={() => (open ? close() : show())}
         onKeyDown={(event) => { if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(event.key)) { event.preventDefault(); show(); } }}
-        className={`group inline-flex min-w-0 items-center justify-between gap-3 rounded-full border bg-white text-left font-semibold text-ink outline-none transition-all duration-200 active:scale-[.98] focus-visible:ring-2 focus-visible:ring-mint disabled:cursor-not-allowed disabled:opacity-40 ${open ? 'border-accent' : 'border-line hover:border-ink-soft'} ${large ? 'min-h-11 pr-4 pl-5 text-[15px]' : 'min-h-9 pr-3 pl-4 text-[13px]'} ${className}`}>
+        className={`group inline-flex min-w-0 items-center justify-between gap-3 rounded-full border bg-surface text-left font-semibold text-ink outline-none transition-all duration-200 active:scale-[.98] focus-visible:ring-2 focus-visible:ring-mint disabled:cursor-not-allowed disabled:opacity-40 ${open ? 'border-accent' : 'border-line hover:border-ink-soft'} ${large ? 'min-h-11 pr-4 pl-5 text-[15px]' : 'min-h-9 pr-3 pl-4 text-[13px]'} ${className}`}>
         <span className="truncate">{current?.label}</span>
         <svg aria-hidden="true" viewBox="0 0 20 20" className={`shrink-0 text-ink-soft transition-transform duration-200 ${open ? 'rotate-180 text-accent' : ''} ${large ? 'size-5' : 'size-4'}`}><path d="M5 7.5l5 5 5-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
       </button>
@@ -72,7 +72,7 @@ export default function Dropdown({ value, onChange, children, label, disabled = 
         <ul ref={listRef} id={listId} role="listbox" aria-label={label} tabIndex={-1} onKeyDown={onListKey}
           aria-activedescendant={`${listId}-${active}`}
           style={{ position: 'fixed', left: rect.left, top: rect.top, bottom: rect.bottom, minWidth: rect.width, maxHeight: rect.maxHeight }}
-          className="dropdown-menu z-50 overflow-y-auto rounded-xl bg-white p-1.5 outline-none">
+          className="dropdown-menu z-50 overflow-y-auto rounded-xl bg-surface p-1.5 outline-none">
           {options.map((option, index) => {
             const selected = option.value === current?.value;
             return (
