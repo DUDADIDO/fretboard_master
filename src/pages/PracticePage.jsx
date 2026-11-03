@@ -51,6 +51,10 @@ export default function PracticePage() {
   const [showFrets, setShowFrets] = useState(true);
   const [keepMarks, setKeepMarks] = useStoredState('fretmaster.keepMarks', true);
   const [soundOn, setSoundOn] = useStoredState('fretmaster.sound', true);
+  // 실전 연습: 진짜 기타처럼 지판과 정답/오답 색만. 프렛 번호·이전에 누른 음·칸 글자(음이름·도수)를 모두 숨긴다.
+  const [realPractice, setRealPractice] = useStoredState('fretmaster.realPractice', false);
+  const fretNumbers = showFrets && !realPractice;
+  const holdMarks = keepMarks && !realPractice;
   // 브라우저는 사용자가 한 번 누른 뒤에야 소리를 낼 수 있어서, 첫 입력 때 기타 소리를 받아 온다.
   useEffect(() => {
     window.addEventListener('pointerdown', loadGuitar, { once: true });
@@ -161,9 +165,11 @@ export default function PracticePage() {
   // 표시 유지를 끄면 실제 기타처럼 방금 누른 정답만 잠깐 보여주고 루트를 포함해 이전에 찾은 위치는 모두 숨긴다.
   const getNodeView = useCallback((node) => {
     const view = getModeNodeView(node);
-    const revealed = keepMarks || node.key === flashKey || (mode === 'pentatonic' && penta.preview);
-    return view.correct && !revealed ? { ...view, correct: false, label: '' } : view;
-  }, [flashKey, getModeNodeView, keepMarks, mode, penta.preview]);
+    const revealed = holdMarks || node.key === flashKey || (mode === 'pentatonic' && penta.preview);
+    const shown = view.correct && !revealed ? { ...view, correct: false, label: '' } : view;
+    // 실전 연습에서는 맞으면 초록, 틀리면 빨강만. 도수 색·글자·힌트 표시는 없다.
+    return realPractice ? { ...shown, label: '', hint: false, tone: shown.correct ? 'tone-note' : shown.tone } : shown;
+  }, [flashKey, getModeNodeView, holdMarks, mode, penta.preview, realPractice]);
 
   // 자동: 음 찾기 모드는 출제 범위(0–12프렛), 펜타토닉은 지금 포지션 근처만. 나머지는 답을 미리 알려주지 않도록 전체.
   const range = useMemo(() => {
@@ -207,20 +213,20 @@ export default function PracticePage() {
       </section>}
       {mode !== 'direct' && <section className="card flex flex-col gap-4 p-5">
         <h3 className="text-lg font-bold text-ink">공통 설정</h3>
-        <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} keepMarks={keepMarks} setKeepMarks={setKeepMarks} soundOn={soundOn} setSoundOn={setSoundOn} skin={skin} setSkin={setSkin} theme={theme} setTheme={setTheme} view={view} setView={setView} />
+        <GlobalControls noteTypes={noteTypes} setNoteTypes={setNoteTypes} showFrets={showFrets} setShowFrets={setShowFrets} keepMarks={keepMarks} setKeepMarks={setKeepMarks} realPractice={realPractice} setRealPractice={setRealPractice} soundOn={soundOn} setSoundOn={setSoundOn} skin={skin} setSkin={setSkin} theme={theme} setTheme={setTheme} view={view} setView={setView} />
       </section>}
     </div>
   );
   const controls = mode === 'pentatonic' ? <section className="control-panel card"><PentatonicActions state={penta} /></section> : null;
   const headerStatus = mode === 'chord-tone' ? <ChordDegreeProgress degrees={chord.tones.map((tone) => tone.degree)} step={chord.step} /> : isTwoFive ? <TwoFiveOneProgress progression={twoFive.activeChords} chordIndex={twoFive.chordIndex} degrees={twoFive.tones.map((tone) => tone.degree)} step={twoFive.step} total={twoFive.sweep ? twoFive.tones.length : 0} /> : state.status;
-  const header = <QuizHeader eyebrow={isNoteMode ? `${navMode.label} · ${modeMeta.label}` : modeMeta.label} target={target} description={state.description} status={headerStatus} />;
-  const fretboard = mode === 'direct' ? <DirectPracticePanel state={direct} mic={mic} /> : <Fretboard board={board} showFrets={showFrets} skin={skin} range={range} activeStrings={state.activeStrings} getNodeView={getNodeView} onNodeClick={onNodeClick} />;
+  const header = <QuizHeader eyebrow={`${isNoteMode ? `${navMode.label} · ${modeMeta.label}` : modeMeta.label}${realPractice && mode !== 'direct' ? ' · 실전 연습' : ''}`} target={target} description={state.description} status={headerStatus} />;
+  const fretboard = mode === 'direct' ? <DirectPracticePanel state={direct} mic={mic} /> : <Fretboard board={board} showFrets={fretNumbers} skin={skin} range={range} activeStrings={state.activeStrings} getNodeView={getNodeView} onNodeClick={onNodeClick} />;
 
   if (!valid) return <Navigate to="/practice/all" replace />;
   const Layout = isMobile ? MobileLayout : DesktopLayout;
   return (
     <>
-      <Layout navigation={<AppBar navMode={navMode} mobile={isMobile} mic={micMode ? mic : null} onHelp={() => setHelpOpen(true)} onSettings={() => setSettingsOpen(true)} />} header={header} controls={controls} board={fretboard} />
+      <Layout navigation={<AppBar navMode={navMode} mobile={isMobile} mic={micMode ? mic : null} realPractice={mode === 'direct' ? null : realPractice} onRealPractice={() => setRealPractice((value) => !value)} onHelp={() => setHelpOpen(true)} onSettings={() => setSettingsOpen(true)} />} header={header} controls={controls} board={fretboard} />
       <Overlay open={settingsOpen} onClose={() => setSettingsOpen(false)} title="설정">{settings}</Overlay>
       <HelpDialog open={helpOpen} navMode={navMode} firstVisit={!seenGuide} onClose={() => { setHelpOpen(false); setSeenGuide(true); }} />
       {mode !== 'direct' && <RotateDevice />}

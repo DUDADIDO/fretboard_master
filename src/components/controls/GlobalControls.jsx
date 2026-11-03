@@ -17,20 +17,23 @@ export function NoteTypePicker({ noteTypes, onChange }) {
   );
 }
 
-export default function GlobalControls({ noteTypes, setNoteTypes, showFrets, setShowFrets, keepMarks, setKeepMarks, soundOn, setSoundOn, skin, setSkin, theme, setTheme, view, setView }) {
+export default function GlobalControls({ noteTypes, setNoteTypes, showFrets, setShowFrets, keepMarks, setKeepMarks, realPractice, setRealPractice, soundOn, setSoundOn, skin, setSkin, theme, setTheme, view, setView }) {
   const setPart = (part) => (value) => setSkin((current) => ({ ...current, [part]: value }));
   // I자는 원래 금속 막대라 고르면 재질을 메탈로 맞춘다. 재질은 그 뒤에 바꿀 수 있다.
   const setInlay = (value) => setSkin((current) => ({ ...current, inlay: value, ...(value === 'bar' ? { material: 'metal' } : {}) }));
   return (
     <div className="control-stack">
+      <Section title="실전 연습">
+        <Switch label="실전 연습" description="진짜 기타처럼 지판과 정답 여부만 보여줘요. 프렛 번호, 이전에 누른 음, 칸의 음이름·도수 글자를 모두 숨겨요." checked={realPractice} onChange={setRealPractice} />
+      </Section>
       <Section title="음">
         <Field label="출제 음 종류"><NoteTypePicker noteTypes={noteTypes} onChange={setNoteTypes} /></Field>
       </Section>
       <Section title="화면 · 소리">
         <Field label="테마"><Segmented ariaLabel="화면 테마" value={theme} onChange={setTheme} options={toOptions(THEMES)} /></Field>
-        <Switch label="찾은 음 계속 표시" description="끄면 실제 기타처럼 누른 음이 잠깐만 보여요" checked={keepMarks} onChange={setKeepMarks} />
+        <Switch label="찾은 음 계속 표시" description={realPractice ? '실전 연습 중에는 꺼져 있어요' : '끄면 실제 기타처럼 누른 음이 잠깐만 보여요'} checked={keepMarks && !realPractice} disabled={realPractice} onChange={setKeepMarks} />
         <Switch label="소리" description="지판을 누르면 클래식 기타 소리로 그 음을 들려줘요" checked={soundOn} onChange={setSoundOn} />
-        <Switch label="프렛 번호" checked={showFrets} onChange={setShowFrets} />
+        <Switch label="프렛 번호" description={realPractice ? '실전 연습 중에는 꺼져 있어요' : undefined} checked={showFrets && !realPractice} disabled={realPractice} onChange={setShowFrets} />
       </Section>
       <Section title="지판">
         <Field label="보기 범위">

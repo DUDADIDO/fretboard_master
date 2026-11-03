@@ -31,9 +31,9 @@ export function Section({ title, children }) {
 }
 
 // 켜고 끄는 설정. 글자 오른쪽에 스위치.
-export function Switch({ checked, onChange, label, description }) {
+export function Switch({ checked, onChange, label, description, disabled = false }) {
   return (
-    <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)} className="flex w-full items-center justify-between gap-4 text-left">
+    <button type="button" role="switch" aria-checked={checked} disabled={disabled} onClick={() => onChange(!checked)} className="flex w-full items-center justify-between gap-4 text-left disabled:cursor-not-allowed disabled:opacity-45">
       <span className="flex flex-col">
         <span className="text-sm font-semibold text-ink">{label}</span>
         {description && <span className="text-xs text-ink-soft">{description}</span>}
