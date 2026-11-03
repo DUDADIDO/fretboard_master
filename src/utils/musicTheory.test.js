@@ -4,7 +4,7 @@ import { fretFrequency } from './guitarSound.js';
 import { getChordTones } from './chords.js';
 import { getIntervalPattern } from './intervals.js';
 import { getPentatonicTargets } from './pentatonic.js';
-import { CHART_KEYS, getHandPath, SEVEN_ONE_PER_STRING, SEVEN_ONE_ROUND_PER_STRING, getTwoFiveOne, keyLabel, nextPositionOffset } from './twoFiveOne.js';
+import { CHART_KEYS, getHandPath, SEVEN_ONE_PER_STRING, SEVEN_ONE_TAIL_BELOW, getTwoFiveOne, keyLabel, nextPositionOffset } from './twoFiveOne.js';
 import { ALL_NOTE_SPELLINGS, canonicalNote, getNotePool, noteLabel, selectableNotes, spellingPreference } from './notes.js';
 
 describe('표준 튜닝과 지판', () => {
@@ -148,23 +148,28 @@ describe('6번줄은 루트만, 그 뒤 (3·5) (7·1): b7·1을 같은 줄에서
     ]);
   });
 
-  it('왕복이면 1번줄을 마지막 1 다음 7까지 치고 그 7에서 완전히 거꾸로 내려온다', () => {
+  it('왕복이면 완전히 거꾸로 내려와 6번줄 루트 다음 7까지 친다 (내려올 때도 줄마다 5·3, 1·7)', () => {
     const dm7 = getTwoFiveOne('C')[0].tones;
-    const round = getHandPath(dm7, 10, 'UPDOWN', SEVEN_ONE_ROUND_PER_STRING);
-    const up = round.slice(0, 12);
-    expect(up.slice(-3).map((item) => `${item.string}-${item.fret}:${item.degree}`)).toEqual(['1-13:b3', '1-17:5', '1-20:b7']);
-    expect(round).toHaveLength(24);
-    expect(round.slice(12).map((item) => item.key)).toEqual([...up].reverse().map((item) => item.key));
+    const up = getHandPath(dm7, 10, 'UP', SEVEN_ONE_PER_STRING);
+    const round = getHandPath(dm7, 10, 'UPDOWN', SEVEN_ONE_PER_STRING, { tailBelow: SEVEN_ONE_TAIL_BELOW });
+    expect(round).toHaveLength(up.length * 2 + 1);
+    expect(round.slice(up.length, up.length * 2).map((item) => item.key)).toEqual([...up].reverse().map((item) => item.key));
+    expect(round.slice(-2).map((item) => `${item.string}-${item.fret}:${item.degree}`)).toEqual(['6-10:1', '6-8:b7']);
+    // 내려오는 길: (5·3) (1·7) (5·3) (1·7) (5·3) (1·7)
+    const down = round.slice(up.length);
+    expect(down.map((item) => item.degree)).toEqual(['5', 'b3', '1', 'b7', '5', 'b3', '1', 'b7', '5', 'b3', '1', 'b7']);
+    expect([6, 5, 4, 3, 2, 1].map((string) => down.filter((item) => item.string === string).length)).toEqual([2, 2, 2, 2, 2, 2]);
   });
 
   it.each(CHART_KEYS.flatMap((key) => getTwoFiveOne(key).map((chord) => [`${key} ${chord.symbol}`, chord])))('%s: 루트 하나 뒤 줄마다 (3·5) (7·1), 지판 안', (_, chord) => {
     for (const start of [0, 3, 7, 12, 20]) {
       const path = getHandPath(chord.tones, start, 'UP', SEVEN_ONE_PER_STRING);
       expect(path).toHaveLength(11);
-      // 왕복용은 1번줄이 한 음 더(7까지), 지판 안에 들어온다
-      const round = getHandPath(chord.tones, start, 'UP', SEVEN_ONE_ROUND_PER_STRING);
-      expect(round).toHaveLength(12);
-      expect(round.at(-1).degree).toBe(order[chord.quality][3]);
+      // 왕복은 끝에 6번줄 루트 아래 7까지, 지판 안에 들어온다
+      const round = getHandPath(chord.tones, start, 'UPDOWN', SEVEN_ONE_PER_STRING, { tailBelow: SEVEN_ONE_TAIL_BELOW });
+      expect(round).toHaveLength(23);
+      expect(round.at(-1)).toMatchObject({ string: 6, degree: order[chord.quality][3] });
+      expect(round.at(-1).fret).toBeGreaterThanOrEqual(0);
       expect(path[0]).toMatchObject({ string: 6, degree: '1' });
       path.forEach((item, index) => {
         expect(item.string).toBe(index ? Math.max(1, 5 - Math.floor((index - 1) / 2)) : 6);

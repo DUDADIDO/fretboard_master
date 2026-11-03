@@ -72,15 +72,17 @@ const OPEN_PITCH = [null, 24, 19, 15, 10, 5, 0];
 // 6번줄 루트에서 1번줄까지 올라가며 줄을 넘어갈 때마다 손이 조금씩 오른쪽으로 옮겨 간다.
 // 예) C키 Dm7, 10프렛: 6줄 10·13 → 5줄 12·15 → 4줄 12·15 → 3줄 14·17 → 2줄 15·18 → 1줄 17·20
 // direction: 'UP'(6→1), 'UPDOWN'(올라갔다 완전히 거꾸로 6번줄 루트까지. 1번줄 마지막 음은 두 번 친다)
+// tailBelow: 왕복 끝에 6번줄 루트 아래로 더 칠 코드톤 수
 // perString: 6번줄부터 줄마다 칠 음 수.
 export const NOTES_PER_STRING = [2, 2, 2, 2, 2, 2];
 // 6번줄은 루트 하나만 치고 줄마다 (3·5) (7·1)을 번갈아 → b7(7)과 1이 같은 줄에 온다.
 // 예) C키 Dm7, 10프렛: 6줄 10 → 5줄 8·12 → 4줄 10·12 → 3줄 10·14 → 2줄 13·15 → 1줄 13·17
 export const SEVEN_ONE_PER_STRING = [1, 2, 2, 2, 2, 2];
-// 왕복일 때만 1번줄을 마지막 1 다음 7까지(3·5·7) 쳐서 1357을 세 바퀴 채우고, 그 7에서 되돌아온다.
-export const SEVEN_ONE_ROUND_PER_STRING = [1, 2, 2, 2, 2, 3];
+// 왕복은 같은 길로 내려와 6번줄 루트 다음 7(루트 아래 코드톤)까지 하나 더 친다 → 내려올 때도 줄마다 (5·3) (1·7).
+// 예) … 1줄 13·17 / 17·13 → … → 6줄 10·8
+export const SEVEN_ONE_TAIL_BELOW = 1;
 
-export function getHandPath(tones, startFret, direction, perString = NOTES_PER_STRING, maxFret = 24) {
+export function getHandPath(tones, startFret, direction, perString = NOTES_PER_STRING, { tailBelow = 0, maxFret = 24 } = {}) {
   const strings = [6, 5, 4, 3, 2, 1];
   const step = 1;
   const pcs = tones.map((tone) => NOTES.indexOf(tone.note));
@@ -99,26 +101,40 @@ export function getHandPath(tones, startFret, direction, perString = NOTES_PER_S
         path.push({ ...toneAt(pitch), string, fret, key: `${string}-${fret}` });
       }
     }
-    return path;
+    // 왕복 끝: 6번줄 루트에서 아래로 tailBelow개
+    const tail = [];
+    if (direction === 'UPDOWN') {
+      let low = OPEN_PITCH[strings[0]] + rootFret;
+      for (let count = 0; count < tailBelow; count += 1) {
+        low -= step; while (!toneAt(low)) low -= step;
+        const fret = low - OPEN_PITCH[strings[0]];
+        if (fret < 0) return null;
+        tail.push({ ...toneAt(low), string: strings[0], fret, key: `${strings[0]}-${fret}` });
+      }
+    }
+    return { path, tail };
   };
 
   // 시작 줄에서 시작 프렛에 가장 가까우면서 경로 전체가 지판 안에 들어오는 루트
-  let path = null;
+  let best = null;
   let bestDistance = Infinity;
   for (let fret = 0; fret <= maxFret; fret += 1) {
     if ((OPEN_PITCH[strings[0]] + fret + 4) % 12 !== rootPc || Math.abs(fret - startFret) >= bestDistance) continue;
     const candidate = build(fret);
-    if (candidate) { path = candidate; bestDistance = Math.abs(fret - startFret); }
+    if (candidate) { best = candidate; bestDistance = Math.abs(fret - startFret); }
   }
-  if (!path) return [];
+  if (!best) return [];
+  const { path, tail } = best;
 
   // 손 위치: 지금 줄에서 치는 음을 덮는 범위(최소 4칸)
-  const withHand = path.map((item) => {
-    const frets = path.filter((other) => other.string === item.string).map((other) => other.fret);
+  const all = [...path, ...tail];
+  const handFor = (item) => {
+    const frets = all.filter((other) => other.string === item.string).map((other) => other.fret);
     const low = Math.min(...frets);
     return { ...item, hand: [low, Math.max(low + 3, ...frets)], pass: 0, anchor: item.degree === '1' };
-  });
+  };
+  const withHand = path.map(handFor);
   if (direction !== 'UPDOWN') return withHand;
-  return [...withHand, ...[...withHand].reverse().map((item) => ({ ...item, pass: 1 }))];
+  return [...withHand, ...[...withHand].reverse().map((item) => ({ ...item, pass: 1 })), ...tail.map((item) => ({ ...handFor(item), pass: 1 }))];
 }
 
