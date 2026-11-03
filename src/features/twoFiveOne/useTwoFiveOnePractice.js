@@ -4,6 +4,8 @@ import { isSamePitchClass } from '../../utils/notes.js';
 import { CHART_KEYS, getHandPath, getTwoFiveOne, GUIDE_DEGREES, keyLabel, nextPositionOffset, SEVEN_ONE_PER_STRING, SWEEP_DIRECTIONS } from '../../utils/twoFiveOne.js';
 
 const ALL_STRINGS = [1, 2, 3, 4, 5, 6];
+// 한 줄 연습의 '6→1→6 순차': 코드 하나를 끝낼 때마다 다음 줄로 (지판 음 찾기의 6→1→6 순차와 같은 순서)
+export const STRING_SEQUENCE = [6, 5, 4, 3, 2, 1, 1, 2, 3, 4, 5, 6];
 export const CHORD_ROMANS = ['ii', 'V', 'I'];
 
 // initialPractice 'SEVEN_ONE': 6번줄은 루트만, 그 뒤 줄마다 (3·5) (7·1)로 b7·1을 같은 줄에서 잡는 별도 모드
@@ -20,7 +22,8 @@ export function useTwoFiveOnePractice(initialPractice = 'SWEEP') {
   const [keyOrder, setKeyOrder] = useState('CHART');
   const [progressionMode, setProgressionMode] = useState('MAJOR'); // 메이저 ii-V-I / 마이너 iiø-V-i
   const [key, setKey] = useState('C');
-  const [string, setString] = useState(6);
+  const [string, setString] = useState(6); // 1~6, 0 = 전체 줄, 'SEQ' = 6→1→6 순차
+  const [seqIndex, setSeqIndex] = useState(0);
   const [toneSet, setToneSet] = useState('ALL');
   const [showNames, setShowNames] = useState(true);
   const [chordFilter, setChordFilter] = useState(CHORD_ROMANS);
@@ -46,11 +49,14 @@ export function useTwoFiveOnePractice(initialPractice = 'SWEEP') {
   const lastFret = rangeEnd + offset;
   const width = lastFret - position + 1;
   const tones = useMemo(() => sweep ? getHandPath(chordTones, position, direction, sevenOne ? SEVEN_ONE_PER_STRING : undefined) : chordTones, [sevenOne, chordTones, direction, position, sweep, width]);
-  const activeStrings = sweep || string === 0 ? ALL_STRINGS : [string];
+  const stringSeq = !sweep && string === 'SEQ';
+  const currentString = stringSeq ? STRING_SEQUENCE[seqIndex] : string;
+  const activeStrings = sweep || currentString === 0 ? ALL_STRINGS : [currentString];
 
   const resetChord = useCallback(() => { setStep(0); setRootFret(null); setFound([]); setWrongKey(null); }, []);
   const restart = useCallback(() => { setChordIndex(0); resetChord(); }, [resetChord]);
   useEffect(restart, [key, progressionMode, string, toneSet, keyOrder, chordFilter, practice, position, width, direction, restart]);
+  useEffect(() => { setSeqIndex(0); }, [string, practice]);
   useEffect(() => { setOffset(0); setKeysDone(0); }, [rangeStart, rangeEnd, shift, shiftBy, keyOrder, keyPool, practice]);
   // 시작 프렛을 바꾸면 폭은 유지한다.
   const moveStart = useCallback((value) => {
@@ -89,9 +95,10 @@ export function useTwoFiveOnePractice(initialPractice = 'SWEEP') {
   const toggleKey = useCallback(toggleIn(setKeyPool), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const advanceChord = useCallback(() => {
+    if (stringSeq) setSeqIndex((index) => (index + 1) % STRING_SEQUENCE.length);
     if (chordIndex < lastIndex) { setChordIndex(chordIndex + 1); resetChord(); }
     else nextKey();
-  }, [chordIndex, lastIndex, nextKey, resetChord]);
+  }, [chordIndex, lastIndex, nextKey, resetChord, stringSeq]);
 
   const click = useCallback((node) => {
     if (!activeStrings.includes(node.string) || step >= tones.length) return;
@@ -112,12 +119,12 @@ export function useTwoFiveOnePractice(initialPractice = 'SWEEP') {
 
   const complete = step >= tones.length;
   const current = tones[Math.min(step, tones.length - 1)];
-  const where = string === 0 ? '아무 줄에서' : `${string}번 줄에서`;
+  const where = currentString === 0 ? '아무 줄에서' : `${currentString}번 줄에서${stringSeq ? ` (6→1→6 ${seqIndex + 1}/${STRING_SEQUENCE.length})` : ''}`;
   const name = showNames ? ` (${current.name})` : '';
   const ask = !sweep ? `${where} ${current.degree}${name}를 찾으세요`
     : step === 0 ? `${SWEEP_DIRECTIONS[direction]} · 6번줄 루트 1${name}에서 시작`
       : `${SWEEP_DIRECTIONS[direction]} · 다음 ${current.degree}${name}`;
-  const hint = sevenOne ? '6번줄은 루트만 치고, 그다음 줄부터 (3·5) (7·1)을 두 음씩 번갈아 이어 가세요. b7(7)과 1은 같은 줄이에요. 손은 오른쪽으로 서서히 옮겨 가요.' : sweep ? '루트에서 시작해 줄마다 두 음씩 1→3→5→7→1… 이어 가세요. 줄을 넘어갈 때마다 손이 진행 방향으로 조금씩 옮겨 가요.' : complete || rootFret == null || string === 0 ? '루트를 찾은 뒤 같은 줄 기준으로 힌트가 표시됩니다.' : getChordToneHint(rootFret, string, current.degree);
+  const hint = sevenOne ? '6번줄은 루트만 치고, 그다음 줄부터 (3·5) (7·1)을 두 음씩 번갈아 이어 가세요. b7(7)과 1은 같은 줄이에요. 손은 오른쪽으로 서서히 옮겨 가요.' : sweep ? '루트에서 시작해 줄마다 두 음씩 1→3→5→7→1… 이어 가세요. 줄을 넘어갈 때마다 손이 진행 방향으로 조금씩 옮겨 가요.' : complete || rootFret == null || currentString === 0 ? '루트를 찾은 뒤 같은 줄 기준으로 힌트가 표시됩니다.' : getChordToneHint(rootFret, currentString, current.degree);
   return {
     practice, setPractice, sweep, sevenOne, position, lastFret, width, rangeStart, rangeEnd, moveStart, setRangeEnd, setSpan, setRange, shift, setShift, shiftBy, setShiftBy, offset,
     direction, setDirection,

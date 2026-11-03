@@ -21,7 +21,7 @@ export default function TwoFiveOneControls({ state }) {
             </Field>
           </>
         ) : (
-          <Field label="줄"><Select label="ii-V-I 줄" value={state.string} onChange={(value) => state.setString(Number(value))}><option value={0}>전체 줄</option>{[6, 5, 4, 3, 2, 1].map((string) => <option key={string} value={string}>{string}번줄</option>)}</Select></Field>
+          <Field label="줄"><Select label="ii-V-I 줄" value={state.string} onChange={(value) => state.setString(value === 'SEQ' ? 'SEQ' : Number(value))}><option value={0}>전체 줄</option><option value="SEQ">6→1→6 순차 (코드마다 다음 줄)</option>{[6, 5, 4, 3, 2, 1].map((string) => <option key={string} value={string}>{string}번줄</option>)}</Select></Field>
         )}
         <Field label="코드톤"><Segmented ariaLabel="찾을 코드톤" value={state.toneSet} onChange={state.setToneSet} options={[{ value: 'ALL', label: '1 3 5 7 전체' }, { value: 'GUIDE', label: '루트 + 가이드톤 3·7' }]} /></Field>
       </Section>
