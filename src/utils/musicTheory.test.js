@@ -4,7 +4,7 @@ import { fretFrequency } from './guitarSound.js';
 import { getChordTones } from './chords.js';
 import { getIntervalPattern } from './intervals.js';
 import { getPentatonicTargets } from './pentatonic.js';
-import { CHART_KEYS, getHandPath, SEVEN_ONE_PER_STRING, getTwoFiveOne, keyLabel, nextPositionOffset } from './twoFiveOne.js';
+import { CHART_KEYS, getHandPath, SEVEN_ONE_PER_STRING, SEVEN_ONE_ROUND_PER_STRING, getTwoFiveOne, keyLabel, nextPositionOffset } from './twoFiveOne.js';
 import { ALL_NOTE_SPELLINGS, canonicalNote, getNotePool, noteLabel, selectableNotes, spellingPreference } from './notes.js';
 
 describe('표준 튜닝과 지판', () => {
@@ -144,16 +144,27 @@ describe('6번줄은 루트만, 그 뒤 (3·5) (7·1): b7·1을 같은 줄에서
   it('C키 Dm7, 6번줄 10프렛', () => {
     const path = getHandPath(getTwoFiveOne('C')[0].tones, 10, 'UP', SEVEN_ONE_PER_STRING);
     expect(path.map((item) => `${item.string}-${item.fret}:${item.degree}`)).toEqual([
-      '6-10:1', '5-8:b3', '5-12:5', '4-10:b7', '4-12:1', '3-10:b3', '3-14:5', '2-13:b7', '2-15:1', '1-13:b3', '1-17:5', '1-20:b7',
+      '6-10:1', '5-8:b3', '5-12:5', '4-10:b7', '4-12:1', '3-10:b3', '3-14:5', '2-13:b7', '2-15:1', '1-13:b3', '1-17:5',
     ]);
   });
 
-  it.each(CHART_KEYS.flatMap((key) => getTwoFiveOne(key).map((chord) => [`${key} ${chord.symbol}`, chord])))('%s: 루트 하나 뒤 줄마다 (3·5) (7·1), 1번줄은 7까지, 지판 안', (_, chord) => {
+  it('왕복이면 1번줄을 마지막 1 다음 7까지 치고 그 7에서 완전히 거꾸로 내려온다', () => {
+    const dm7 = getTwoFiveOne('C')[0].tones;
+    const round = getHandPath(dm7, 10, 'UPDOWN', SEVEN_ONE_ROUND_PER_STRING);
+    const up = round.slice(0, 12);
+    expect(up.slice(-3).map((item) => `${item.string}-${item.fret}:${item.degree}`)).toEqual(['1-13:b3', '1-17:5', '1-20:b7']);
+    expect(round).toHaveLength(24);
+    expect(round.slice(12).map((item) => item.key)).toEqual([...up].reverse().map((item) => item.key));
+  });
+
+  it.each(CHART_KEYS.flatMap((key) => getTwoFiveOne(key).map((chord) => [`${key} ${chord.symbol}`, chord])))('%s: 루트 하나 뒤 줄마다 (3·5) (7·1), 지판 안', (_, chord) => {
     for (const start of [0, 3, 7, 12, 20]) {
       const path = getHandPath(chord.tones, start, 'UP', SEVEN_ONE_PER_STRING);
-      // 1357을 세 바퀴: 마지막 1 다음 7까지
-      expect(path).toHaveLength(12);
-      expect(path.at(-1).degree).toBe(order[chord.quality][3]);
+      expect(path).toHaveLength(11);
+      // 왕복용은 1번줄이 한 음 더(7까지), 지판 안에 들어온다
+      const round = getHandPath(chord.tones, start, 'UP', SEVEN_ONE_ROUND_PER_STRING);
+      expect(round).toHaveLength(12);
+      expect(round.at(-1).degree).toBe(order[chord.quality][3]);
       expect(path[0]).toMatchObject({ string: 6, degree: '1' });
       path.forEach((item, index) => {
         expect(item.string).toBe(index ? Math.max(1, 5 - Math.floor((index - 1) / 2)) : 6);
