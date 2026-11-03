@@ -75,8 +75,9 @@ const OPEN_PITCH = [null, 24, 19, 15, 10, 5, 0];
 // perString: 6번줄부터 줄마다 칠 음 수.
 export const NOTES_PER_STRING = [2, 2, 2, 2, 2, 2];
 // 6번줄은 루트 하나만 치고 줄마다 (3·5) (7·1)을 번갈아 → b7(7)과 1이 같은 줄에 온다.
-// 예) C키 Dm7, 10프렛: 6줄 10 → 5줄 8·12 → 4줄 10·12 → 3줄 10·14 → 2줄 13·15 → 1줄 13·17
-export const SEVEN_ONE_PER_STRING = [1, 2, 2, 2, 2, 2];
+// 1번줄은 마지막 1 다음 7까지 세 음(3·5·7)을 쳐서 1357을 세 바퀴 채운다.
+// 예) C키 Dm7, 10프렛: 6줄 10 → 5줄 8·12 → 4줄 10·12 → 3줄 10·14 → 2줄 13·15 → 1줄 13·17·20
+export const SEVEN_ONE_PER_STRING = [1, 2, 2, 2, 2, 3];
 
 export function getHandPath(tones, startFret, direction, perString = NOTES_PER_STRING, maxFret = 24) {
   const strings = [6, 5, 4, 3, 2, 1];

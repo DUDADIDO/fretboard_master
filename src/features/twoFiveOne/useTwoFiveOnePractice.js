@@ -124,7 +124,7 @@ export function useTwoFiveOnePractice(initialPractice = 'SWEEP') {
   const ask = !sweep ? `${where} ${current.degree}${name}를 찾으세요`
     : step === 0 ? `${SWEEP_DIRECTIONS[direction]} · 6번줄 루트 1${name}에서 시작`
       : `${SWEEP_DIRECTIONS[direction]} · 다음 ${current.degree}${name}`;
-  const hint = sevenOne ? '6번줄은 루트만 치고, 그다음 줄부터 (3·5) (7·1)을 두 음씩 번갈아 이어 가세요. b7(7)과 1은 같은 줄이에요. 손은 오른쪽으로 서서히 옮겨 가요.' : sweep ? '루트에서 시작해 줄마다 두 음씩 1→3→5→7→1… 이어 가세요. 줄을 넘어갈 때마다 손이 진행 방향으로 조금씩 옮겨 가요.' : complete || rootFret == null || currentString === 0 ? '루트를 찾은 뒤 같은 줄 기준으로 힌트가 표시됩니다.' : getChordToneHint(rootFret, currentString, current.degree);
+  const hint = sevenOne ? '6번줄은 루트만 치고, 그다음 줄부터 (3·5) (7·1)을 두 음씩 번갈아 이어 가세요. b7(7)과 1은 같은 줄이에요. 1번줄은 마지막 1 다음 7까지 (3·5·7) 세 음을 쳐요. 손은 오른쪽으로 서서히 옮겨 가요.' : sweep ? '루트에서 시작해 줄마다 두 음씩 1→3→5→7→1… 이어 가세요. 줄을 넘어갈 때마다 손이 진행 방향으로 조금씩 옮겨 가요.' : complete || rootFret == null || currentString === 0 ? '루트를 찾은 뒤 같은 줄 기준으로 힌트가 표시됩니다.' : getChordToneHint(rootFret, currentString, current.degree);
   return {
     practice, setPractice, sweep, sevenOne, position, lastFret, width, rangeStart, rangeEnd, moveStart, setRangeEnd, setSpan, setRange, shift, setShift, shiftBy, setShiftBy, offset,
     direction, setDirection,
