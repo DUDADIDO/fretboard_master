@@ -71,7 +71,7 @@ const OPEN_PITCH = [null, 24, 19, 15, 10, 5, 0];
 // 루트에서 출발해 줄마다 두 음씩 1→3→5→7→1… 음높이 순서로 이어 가는 경로.
 // 6번줄 루트에서 1번줄까지 올라가며 줄을 넘어갈 때마다 손이 조금씩 오른쪽으로 옮겨 간다.
 // 예) C키 Dm7, 10프렛: 6줄 10·13 → 5줄 12·15 → 4줄 12·15 → 3줄 14·17 → 2줄 15·18 → 1줄 17·20
-// direction: 'UP'(6→1), 'UPDOWN'(올라갔다 같은 길로 6번줄 루트까지)
+// direction: 'UP'(6→1), 'UPDOWN'(올라갔다 완전히 거꾸로 6번줄 루트까지. 1번줄 마지막 음은 두 번 친다)
 // perString: 6번줄부터 줄마다 칠 음 수.
 export const NOTES_PER_STRING = [2, 2, 2, 2, 2, 2];
 // 6번줄은 루트 하나만 치고 줄마다 (3·5) (7·1)을 번갈아 → b7(7)과 1이 같은 줄에 온다.
@@ -117,6 +117,6 @@ export function getHandPath(tones, startFret, direction, perString = NOTES_PER_S
     return { ...item, hand: [low, Math.max(low + 3, ...frets)], pass: 0, anchor: item.degree === '1' };
   });
   if (direction !== 'UPDOWN') return withHand;
-  return [...withHand, ...[...withHand].reverse().slice(1).map((item) => ({ ...item, pass: 1 }))];
+  return [...withHand, ...[...withHand].reverse().map((item) => ({ ...item, pass: 1 }))];
 }
 

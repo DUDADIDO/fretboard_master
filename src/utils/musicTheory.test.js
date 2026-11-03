@@ -127,7 +127,10 @@ describe('루트에서 줄마다 두 음씩 이어 가는 경로', () => {
     const dm7 = getTwoFiveOne('C')[0].tones;
     const up = getHandPath(dm7, 10, 'UP');
     const round = getHandPath(dm7, 10, 'UPDOWN');
-    expect(round).toHaveLength(up.length * 2 - 1);
+    // 완전한 반대: 1번줄 마지막 음을 한 번 더 치고 같은 길로 내려온다.
+    expect(round).toHaveLength(up.length * 2);
+    expect(round.slice(up.length).map((item) => item.key)).toEqual([...up].reverse().map((item) => item.key));
+    expect(round[up.length - 1].key).toBe(round[up.length].key);
     expect(round[0]).toMatchObject({ string: 6, degree: '1' });
     expect(round.at(-1).key).toBe('6-10');
   });
