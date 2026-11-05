@@ -7,7 +7,8 @@ import { useMediaQuery } from '../hooks/useMediaQuery.js';
 import { useStoredState } from '../hooks/useStoredState.js';
 import { useMicPitch } from '../hooks/useMicPitch.js';
 import { useTheme } from '../hooks/useTheme.js';
-import { fretSemitone, loadGuitar, playFret } from '../utils/guitarSound.js';
+import { fretSemitone, loadGuitar, playFret, playWrong, WRONG_SOUND_MS } from '../utils/guitarSound.js';
+import { judgeHeard } from '../utils/noteTracker.js';
 import { useNotePractice } from '../features/notePractice/useNotePractice.js';
 import { useThirdPractice } from '../features/thirdPractice/useThirdPractice.js';
 import { usePentatonicPractice } from '../features/pentatonic/usePentatonicPractice.js';
@@ -51,6 +52,11 @@ export default function PracticePage() {
   const [showFrets, setShowFrets] = useState(true);
   const [keepMarks, setKeepMarks] = useStoredState('fretmaster.keepMarks', true);
   const [soundOn, setSoundOn] = useStoredState('fretmaster.sound', true);
+  // 오답 피드백: 화면을 안 봐도 틀린 걸 알 수 있게 버저 소리와 화면 흔들림
+  const [wrongSound, setWrongSound] = useStoredState('fretmaster.wrongSound', true);
+  const [wrongShake, setWrongShake] = useStoredState('fretmaster.wrongShake', true);
+  const shakeRef = useRef(null);
+  const damageRef = useRef(null);
   // 실전 연습: 진짜 기타처럼 지판과 정답/오답 색만. 프렛 번호·이전에 누른 음·칸 글자(음이름·도수)를 모두 숨긴다.
   const [realPractice, setRealPractice] = useStoredState('fretmaster.realPractice', false);
   const fretNumbers = showFrets && !realPractice;
@@ -111,26 +117,49 @@ export default function PracticePage() {
   // 화음 배음 때문에 옥타브를 헷갈릴 수 있어 같은 음이름이면 한 옥타브 차이까지 받아준다.
   const [micDevice, setMicDevice] = useStoredState('fretmaster.micDevice', '');
   const micMode = mode === 'direct' || mode === 'chord-tone' || (isTwoFive && twoFive.sweep);
-  const samePitchClass = (a, b) => (((a - b) % 12) + 12) % 12 === 0;
-  const onHeard = (semitone) => {
-    if (mode === 'direct') {
-      if (samePitchClass(semitone + 4, getPitchClass(direct.target))) direct.next();
-      return;
-    }
+  // 지금 차례의 음. 코드 사이 쉬는 순간처럼 차례가 없으면 null(판정하지 않음).
+  const micTarget = () => {
+    if (mode === 'direct') return { target: getPitchClass(direct.target) - 4, anyOctave: true };
     if (isTwoFive && twoFive.sweep) {
       const expected = twoFive.tones[twoFive.step];
-      if (!expected || twoFive.complete) return;
-      const target = fretSemitone(expected.string, expected.fret);
-      if (samePitchClass(semitone, target) && Math.abs(semitone - target) <= 12) press(board.find((node) => node.key === expected.key));
-      return;
+      return expected && !twoFive.complete ? { target: fretSemitone(expected.string, expected.fret), expected } : null;
     }
     if (mode === 'chord-tone') {
-      const candidates = board.filter((node) => node.string === chord.string && !chord.found.has(node.key) && samePitchClass(fretSemitone(node.string, node.fret), semitone));
+      const expected = chord.tones[chord.step];
+      return expected ? { target: getPitchClass(expected.note) - 4, anyOctave: true } : null;
+    }
+    return null;
+  };
+  // 맞는 음은 바로 처리한다. 돌려주는 true는 "오답 후보가 아님"이라는 뜻이다.
+  const onHeard = (semitone) => {
+    const turn = micTarget();
+    if (!turn) return true;
+    const verdict = judgeHeard(semitone, turn.target, turn);
+    if (verdict === 'wrong') return false;
+    if (verdict === 'ignore') return true;
+    if (mode === 'direct') direct.next();
+    else if (mode === 'chord-tone') {
+      const candidates = board.filter((node) => node.string === chord.string && !chord.found.has(node.key) && (((fretSemitone(node.string, node.fret) - semitone) % 12) + 12) % 12 === 0);
       const node = candidates.sort((a, b) => Math.abs(fretSemitone(a.string, a.fret) - semitone) - Math.abs(fretSemitone(b.string, b.fret) - semitone))[0];
       if (node) press(node);
+    } else press(board.find((node) => node.key === turn.expected.key));
+    return true;
+  };
+  const onMissed = (semitone) => {
+    const turn = micTarget();
+    if (!turn || judgeHeard(semitone, turn.target, turn) !== 'wrong') return;
+    practiceLog.miss(...logArgs);
+    damage();
+  };
+  const mic = useMicPitch(onHeard, micDevice, onMissed);
+  const damage = () => {
+    if (wrongSound) { playWrong(); mic.pause(WRONG_SOUND_MS + 150); }
+    damageRef.current?.animate([{ opacity: 0 }, { opacity: 1, offset: 0.12 }, { opacity: 0 }], { duration: 450, easing: 'ease-out' });
+    if (wrongShake && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      shakeRef.current?.animate([0, -12, 11, -9, 8, -5, 4, -2, 0].map((x, index) => ({ transform: `translate(${x}px, ${index % 2 ? 3 : -3}px)` })), { duration: 380, easing: 'ease-out' });
     }
   };
-  const mic = useMicPitch(onHeard, micDevice);
+  useEffect(() => { if (state.wrongKey) damage(); }, [state.wrongKey]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!micMode) mic.stop(); }, [micMode]); // eslint-disable-line react-hooks/exhaustive-deps
   const getModeNodeView = useCallback((node) => {
     const wrong = state.wrongKey === node.key;
@@ -205,6 +234,12 @@ export default function PracticePage() {
         {mode === 'chord-tone' && <ChordToneControls state={chord} preference={preference} />}
         {isTwoFive && <TwoFiveOneControls state={twoFive} />}
       </section>
+      <section className="card flex flex-col gap-4 p-5">
+        <Section title="오답 피드백">
+          <Switch label="오답 소리" description="틀리면 버저가 울려요. 화면을 안 봐도 알 수 있어요" checked={wrongSound} onChange={setWrongSound} />
+          <Switch label="화면 흔들림" description="틀리면 게임에서 맞은 것처럼 화면이 흔들려요" checked={wrongShake} onChange={setWrongShake} />
+        </Section>
+      </section>
       {micMode && <section className="card flex flex-col gap-4 p-5"><MicControls mic={mic} device={micDevice} setDevice={setMicDevice} /></section>}
       {logConnected && <section className="card flex flex-col gap-3 p-5">
         <h3 className="text-lg font-bold text-ink">연습 일지</h3>
@@ -226,7 +261,10 @@ export default function PracticePage() {
   const Layout = isMobile ? MobileLayout : DesktopLayout;
   return (
     <>
+      <div ref={shakeRef}>
       <Layout navigation={<AppBar navMode={navMode} mobile={isMobile} mic={micMode ? mic : null} realPractice={mode === 'direct' ? null : realPractice} onRealPractice={() => setRealPractice((value) => !value)} onHelp={() => setHelpOpen(true)} onSettings={() => setSettingsOpen(true)} />} header={header} controls={controls} board={fretboard} />
+      </div>
+      <div ref={damageRef} aria-hidden="true" className="damage-flash" />
       <Overlay open={settingsOpen} onClose={() => setSettingsOpen(false)} title="설정">{settings}</Overlay>
       <HelpDialog open={helpOpen} navMode={navMode} firstVisit={!seenGuide} onClose={() => { setHelpOpen(false); setSeenGuide(true); }} />
       {mode !== 'direct' && <RotateDevice />}

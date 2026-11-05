@@ -121,3 +121,29 @@ export function playFret(string, fret, volume = 0.6) {
   source.start(now);
   source.stop(now + NOTE_SECONDS + RELEASE_SECONDS + 0.05);
 }
+
+// 오답 버저. 음이 어긋난 낮은 소리 두 개를 겹쳐서 기타 소리와 헷갈리지 않게 한다.
+export const WRONG_SOUND_MS = 280;
+export function playWrong(volume = 0.32) {
+  const context = getContext();
+  if (!context) return;
+  const now = context.currentTime;
+  const end = now + WRONG_SOUND_MS / 1000;
+  const tone = context.createBiquadFilter();
+  tone.type = 'lowpass';
+  tone.frequency.value = 2000;
+  const gain = context.createGain();
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(volume, now + 0.012);
+  gain.gain.setValueAtTime(volume, end - 0.1);
+  gain.gain.exponentialRampToValueAtTime(0.0001, end);
+  tone.connect(gain).connect(context.destination);
+  for (const frequency of [140, 148.5]) {
+    const oscillator = context.createOscillator();
+    oscillator.type = 'sawtooth';
+    oscillator.frequency.value = frequency;
+    oscillator.connect(tone);
+    oscillator.start(now);
+    oscillator.stop(end + 0.02);
+  }
+}

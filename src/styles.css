@@ -52,7 +52,9 @@ html.dark {
 :root { --tone-third-ink: #8a520c; --tone-fifth-ink: #215283; --tone-seventh-ink: #5e2f83; color-scheme: light; background: var(--color-canvas); font-family: var(--font-sans); font-weight: 500; letter-spacing: -0.01em; -webkit-font-smoothing: antialiased; }
 * { box-sizing: border-box; }
 html, body, #root { min-width: 320px; min-height: 100%; margin: 0; }
-body { min-height: 100dvh; background: var(--color-canvas); color: var(--color-ink); word-break: keep-all; overflow-wrap: anywhere; }
+body { min-height: 100dvh; background: var(--color-canvas); color: var(--color-ink); word-break: keep-all; overflow-wrap: anywhere; overflow-x: clip; }
+/* 오답 때 화면 가장자리가 잠깐 빨개진다 */
+.damage-flash { position: fixed; inset: 0; z-index: 45; pointer-events: none; opacity: 0; box-shadow: inset 0 0 90px 24px rgba(200,32,20,.6); }
 button, select { font: inherit; letter-spacing: inherit; }
 button { touch-action: manipulation; }
 
